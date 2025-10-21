@@ -1,6 +1,6 @@
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, Globe, Cpu, Database, Server, Camera, Code2, Rocket, ExternalLink, Download, Smartphone, Moon, Sun, Box, Mic } from "lucide-react";
+import { Github, Linkedin, Mail, Globe, Cpu, Database, Server, Camera, Code2, Rocket, Download, Smartphone, Moon, Sun, Box, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
