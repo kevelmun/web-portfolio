@@ -328,8 +328,8 @@ export default function Portfolio() {
               </CardHeader>
               <CardContent>
                 <img
-                  src="../../public/images/Me.PNG"
-                  alt="Tu foto"
+                  src="/images/Me.PNG"
+                  alt="Kevin Muñoz"
                   className="w-full max-w-sm aspect-square object-cover rounded-2xl mx-auto shadow"
                 />
                 <p className="text-xs text-muted-foreground mt-3 text-center">Ecuatoriano - 24 años</p>

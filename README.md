@@ -50,6 +50,8 @@ npm run preview
 
 ## Getting started (Docker)
 
+### Development (Vite dev server)
+
 This repository includes a dev-focused Dockerfile and a `docker-compose.yml` that mounts the source for instant reload in the container.
 
 Run with Docker Compose:
@@ -64,6 +66,30 @@ Notes:
 
 - Live reload works thanks to the project folder bind mount (`.:/app`).
 - The container runs `npm run dev -- --host 0.0.0.0` to be reachable from your host.
+
+### Production (Nginx serving static build)
+
+For production deployment, use the multi-stage `Dockerfile.prod` that builds the app and serves it with Nginx:
+
+```bash
+# Build the production image
+docker compose -f docker-compose.prod.yml build
+
+# Start the production container
+docker compose -f docker-compose.prod.yml up -d
+
+# Verify it's running
+docker compose -f docker-compose.prod.yml ps
+curl -I http://localhost
+```
+
+The production setup:
+
+- Uses Node 20 Alpine to build the app (`npm run build` → `dist/`)
+- Copies the build output to an Nginx Alpine image
+- Nginx config at `ops/nginx/default.conf` handles SPA routing (all routes → `index.html`)
+- Serves on port 80
+- Optimized for deployment (no dev dependencies or source code in final image)
 
 ## Available scripts
 
@@ -90,6 +116,8 @@ Key files and folders:
 - `vite.config.ts` – Vite config, including `@` alias to `src`
 - `tailwind.config.js` – Tailwind setup + animate plugin
 - `Dockerfile`, `docker-compose.yml` – Dev container config
+- `Dockerfile.prod`, `docker-compose.prod.yml` – Production container config
+- `ops/nginx/default.conf` – Nginx config for production SPA routing
 
 Path alias:
 
@@ -116,13 +144,34 @@ Use in code: `import.meta.env.VITE_API_BASE_URL`.
 
 ## Deployment
 
+### Static hosting
+
 This is a static site once built (`dist/`). You can deploy to any static host:
 
-- Vercel / Netlify: point to `npm run build` and serve `dist/`.
-- GitHub Pages: build locally or in CI and publish `dist/`.
-- Any static server: copy `dist/` to your server.
+- **Vercel / Netlify**: point to `npm run build` and serve `dist/`.
+- **GitHub Pages**: build locally or in CI and publish `dist/`.
+- **Any static server**: copy `dist/` to your server.
 
-If you need a production container image, consider a multi-stage Docker build that serves `dist/` with a minimal web server (e.g., `nginx:alpine`). The included Dockerfile is tailored to development.
+### Docker (production)
+
+For containerized deployment (e.g., VPS, cloud instances):
+
+1. Build and push your image:
+
+```bash
+docker compose -f docker-compose.prod.yml build
+# Optional: tag and push to a registry
+docker tag web-portfolio-web:latest your-registry/web-portfolio:latest
+docker push your-registry/web-portfolio:latest
+```
+
+2. On your production server, pull and run:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+The app will be available on port 80. For HTTPS, place a reverse proxy (e.g., Caddy, Traefik, or another Nginx) in front or modify `ops/nginx/default.conf` to handle SSL.
 
 ## Troubleshooting
 
