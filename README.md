@@ -67,9 +67,9 @@ Notes:
 - Live reload works thanks to the project folder bind mount (`.:/app`).
 - The container runs `npm run dev -- --host 0.0.0.0` to be reachable from your host.
 
-### Production (Nginx serving static build)
+### Production (Caddy with automatic HTTPS)
 
-For production deployment, use the multi-stage `Dockerfile.prod` that builds the app and serves it with Nginx:
+For production deployment, use the multi-stage `Dockerfile.prod.caddy` that builds the app and serves it with Caddy:
 
 ```bash
 # Build the production image
@@ -86,10 +86,39 @@ curl -I http://localhost
 The production setup:
 
 - Uses Node 20 Alpine to build the app (`npm run build` → `dist/`)
-- Copies the build output to an Nginx Alpine image
-- Nginx config at `ops/nginx/default.conf` handles SPA routing (all routes → `index.html`)
-- Serves on port 80
-- Optimized for deployment (no dev dependencies or source code in final image)
+- Copies the build output to a Caddy Alpine image
+- Caddy config at `Caddyfile` handles SPA routing (all routes → `index.html`)
+- **Automatic HTTPS**: Caddy obtains and renews Let's Encrypt certificates automatically when you configure your domain
+- Serves on ports 80 (HTTP) and 443 (HTTPS)
+- Persistent volumes (`caddy_data`, `caddy_config`) store certificates between restarts
+
+**To enable HTTPS with your domain:**
+
+1. Edit `Caddyfile` and replace `:80` with your actual domain:
+   ```
+   your-domain.com, www.your-domain.com {
+       root * /usr/share/caddy
+       try_files {path} /index.html
+       file_server
+   }
+   ```
+
+2. Ensure DNS A/AAAA records point to your server's IP
+
+3. Rebuild and restart:
+   ```bash
+   docker compose -f docker-compose.prod.yml down
+   docker compose -f docker-compose.prod.yml build
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+
+4. Caddy will automatically obtain a valid SSL certificate from Let's Encrypt
+
+**Alternative: Nginx setup (legacy)**
+
+If you prefer Nginx instead of Caddy, use `Dockerfile.prod` (without auto-HTTPS):
+- Config at `ops/nginx/default.conf`
+- Only port 80; for HTTPS you'll need a reverse proxy or manual cert setup
 
 ## Available scripts
 
@@ -116,8 +145,10 @@ Key files and folders:
 - `vite.config.ts` – Vite config, including `@` alias to `src`
 - `tailwind.config.js` – Tailwind setup + animate plugin
 - `Dockerfile`, `docker-compose.yml` – Dev container config
-- `Dockerfile.prod`, `docker-compose.prod.yml` – Production container config
-- `ops/nginx/default.conf` – Nginx config for production SPA routing
+- `Dockerfile.prod.caddy`, `docker-compose.prod.yml` – Production container with Caddy (auto-HTTPS)
+- `Dockerfile.prod` – Alternative production setup with Nginx (manual HTTPS)
+- `Caddyfile` – Caddy config for SPA routing and HTTPS
+- `ops/nginx/default.conf` – Nginx config (if using Dockerfile.prod)
 
 Path alias:
 
@@ -152,26 +183,45 @@ This is a static site once built (`dist/`). You can deploy to any static host:
 - **GitHub Pages**: build locally or in CI and publish `dist/`.
 - **Any static server**: copy `dist/` to your server.
 
-### Docker (production)
+### Docker (production with Caddy)
 
-For containerized deployment (e.g., VPS, cloud instances):
+The default production setup uses Caddy with automatic HTTPS. For containerized deployment:
 
-1. Build and push your image:
+1. **Configure your domain** in `Caddyfile` (replace `:80` with your domain)
+
+2. **Build and start:**
 
 ```bash
 docker compose -f docker-compose.prod.yml build
-# Optional: tag and push to a registry
-docker tag web-portfolio-web:latest your-registry/web-portfolio:latest
-docker push your-registry/web-portfolio:latest
-```
-
-2. On your production server, pull and run:
-
-```bash
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-The app will be available on port 80. For HTTPS, place a reverse proxy (e.g., Caddy, Traefik, or another Nginx) in front or modify `ops/nginx/default.conf` to handle SSL.
+3. **Verify:**
+
+```bash
+docker compose -f docker-compose.prod.yml ps
+curl -I https://your-domain.com  # Should show valid HTTPS
+```
+
+**Key benefits:**
+- Automatic Let's Encrypt certificates (no manual setup)
+- Auto-renewal (Caddy handles it)
+- HTTP → HTTPS redirect built-in
+- Certificates persist in Docker volumes (`caddy_data`, `caddy_config`)
+
+**For deployment to a remote server:**
+
+```bash
+# On your server (after git pull)
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**To push to a registry:**
+
+```bash
+docker tag web-portfolio-web:latest your-registry/web-portfolio:latest
+docker push your-registry/web-portfolio:latest
+```
 
 ## Troubleshooting
 

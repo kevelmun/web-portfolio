@@ -2,6 +2,16 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile.prod.caddy
     ports:
       - "80:80"
+      - "443:443"
+    # Volumes for persistent Let's Encrypt certificates
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

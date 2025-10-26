@@ -1,0 +1,15 @@
+# Replace with your actual domain
+# For local testing without a domain, use: :80
+# For production with domain: your-domain.com, www.your-domain.com
+
+:80 {
+    root * /usr/share/caddy
+    try_files {path} /index.html
+    file_server
+}
+
+kevelmun.dev, www.kevelmun.dev {
+    root * /usr/share/caddy
+    try_files {path} /index.html
+    file_server
+}
