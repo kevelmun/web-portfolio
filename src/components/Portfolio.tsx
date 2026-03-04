@@ -41,7 +41,7 @@ const projects = [
   {
     title: "Fruit-Ripeness",
     description:
-      "Repositorio para la extracción de imágenes desde nubes de puntos 3D (formato .ply) generadas por el escáner POP2; el flujo lee/recorta nubes, extrae información de color y genera imágenes proyectadas con máscaras." ,
+      "Pipeline de visión por computadora para estimar madurez de fruta desde nubes de puntos 3D (.ply) obtenidas con escáner POP2. Implementa lectura y recorte de nube, extracción de color, proyección 2D y generación de máscaras para construir datasets útiles en entrenamiento y evaluación de modelos.",
     tags: ["Python", "Open3D", "OpenCV", "Point Cloud Processing", "Data Extraction"],
     links: { demo: "#", code: "https://github.com/kevelmun/Fruit-Ripeness" },
     icon: <Camera className="w-5 h-5" />,
@@ -50,7 +50,7 @@ const projects = [
   {
     title: "StereoThermal",
     description:
-      "Sistema de visión que integra cámaras estéreo y térmica con captura sincronizada, calibración e imagen-registro para aplicaciones avanzadas de procesamiento de imágenes.",
+      "Sistema multimodal que integra cámaras estéreo RGB y térmica LWIR con captura sincronizada, calibración intrínseca/extrínseca y registro de imágenes. El flujo prepara datos alineados para tareas de disparidad, segmentación y análisis térmico en escenarios de investigación aplicada.",
     tags: ["Python", "OpenCV", "LightGlue", "Image Registration", "Stereo Vision", "Thermal Imaging"],
     links: { demo: "#", code: "https://github.com/kevelmun/StereoThermal" },
     icon: <Box className="w-5 h-5" />,
@@ -59,7 +59,7 @@ const projects = [
   {
     title: "VoiceChat-AzureOllamaAgent",
     description:
-      "Aplicación de chat por voz que integra los servicios de Azure (Speech-to-Text y Text-to-Speech) con el modelo Ollama 3.2, para convertir voz en texto, procesar con el modelo y devolver respuesta en voz.",
+      "Aplicación de asistente por voz que conecta Azure Speech (Speech-to-Text y Text-to-Speech) con Ollama para ejecutar un ciclo completo voz -> texto -> inferencia -> respuesta hablada. Incluye manejo de contexto conversacional y arquitectura base para asistentes hands-free orientados a productividad.",
     tags: ["Python", "Azure Speech", "Text-to-Speech", "Voice Recognition", "LLM Agents", "Ollama"],
     links: { demo: "#", code: "https://github.com/kevelmun/VoiceChat-AzureOllamaAgent" },
     icon: <Mic className="w-5 h-5" />,
@@ -73,10 +73,11 @@ const experiences = [
     company: "FUNIBER · Guayaquil, Ecuador",
     period: "Enero 2025 — Presente",
     bullets: [
-      "Microservicios escalables con Laravel y React; refactor de proyectos legacy (PHP 5.6) hacia arquitecturas modernas.",
-      "Automatización de reportes, migraciones y optimización de queries en MySQL/PostgreSQL.",
-      "Mensajería asíncrona con RabbitMQ y WebSocket broadcasting con Laravel Reverb.",
-      "Uso de IA y herramientas de productividad para acelerar desarrollo y documentación (Scrum con Asana/Slack).",
+      "Desarrollo y mantenimiento de aplicaciones web y microservicios en proyectos modernos y legacy usando Laravel/Node.js junto con React/Vue.",
+      "Migración y refactor de sistemas legacy en PHP 5.6 hacia arquitecturas modulares modernas, mejorando mantenibilidad y escalabilidad.",
+      "Automatización de reportes, migraciones y optimización avanzada de consultas SQL en MySQL y PostgreSQL.",
+      "Integración de RabbitMQ para mensajería asíncrona entre servicios e implementación de WebSocket broadcasting con Laravel Reverb.",
+      "Uso de IA y herramientas de productividad para acelerar desarrollo y documentación dentro de flujos Scrum con Asana y Slack.",
     ],
   },
   {
@@ -84,9 +85,11 @@ const experiences = [
     company: "CiDIS · ESPOL · Guayaquil, Ecuador",
     period: "Junio 2024 — Mayo 2025",
     bullets: [
-      "Plataforma de visión estéreo para integrar módulos de procesamiento existentes.",
-      "Block‑matching y ML para mapas de disparidad; segmentación/detección (YOLO) y nubes de puntos.",
-      "Fusión multimodal RGB‑Térmico (LWIR) y análisis de benchmarks/papers.",
+      "Diseño y desarrollo de una plataforma de visión estéreo para integrar múltiples módulos de procesamiento existentes en CiDIS.",
+      "Implementación de métodos de block-matching y modelos de machine learning para generar mapas de disparidad robustos.",
+      "Aplicación de modelos de detección y segmentación (YOLO) para construir nubes de puntos segmentadas y de keypoints.",
+      "Desarrollo de algoritmos de procesamiento y fusión multimodal RGB-Térmico (LWIR) para análisis más confiable.",
+      "Investigación continua de papers y benchmarks para incorporar técnicas de última generación en los prototipos.",
     ],
   },
   {
@@ -94,8 +97,10 @@ const experiences = [
     company: "ESPOL · Guayaquil, Ecuador",
     period: "Mayo 2023 — Agosto 2023",
     bullets: [
-      "Web scraping de Twitter (X) para análisis de criminalidad en Guayaquil.",
-      "Limpieza, construcción de datasets y gráficos analíticos para preguntas de negocio.",
+      "Recolección de datos en X (Twitter) mediante web scraping para analizar patrones de criminalidad en Guayaquil.",
+      "Limpieza y filtrado de datos crudos para mejorar calidad y consistencia de la información.",
+      "Construcción de datasets y flujo ETL para análisis reproducible.",
+      "Generación de visualizaciones y reportes analíticos orientados a responder preguntas de negocio.",
     ],
   },
   {
@@ -103,8 +108,11 @@ const experiences = [
     company: "Hangaroa S.A. · Guayaquil, Ecuador",
     period: "Septiembre 2022 — Enero 2023",
     bullets: [
-      "Mockups y desarrollo de app móvil, web y panel administrador (frontend y backend).",
-      "Seguimiento ágil con Pivotal Tracker y corrección de bugs.",
+      "Liderazgo técnico del equipo en el primer release, coordinando entregables bajo metodología Scrum.",
+      "Seguimiento de historias de usuario con Pivotal Tracker para mantener trazabilidad del avance.",
+      "Diseño de mockups para app móvil, web de usuario y panel administrador.",
+      "Desarrollo full-stack de la solución web y móvil (frontend y backend).",
+      "Code reviews, seguimiento y corrección de bugs para estabilizar el producto.",
     ],
   },
   {
@@ -112,7 +120,9 @@ const experiences = [
     company: "ESPOL · Guayaquil, Ecuador",
     period: "Junio 2023 — Septiembre 2023",
     bullets: [
-      "Bosque Virtual La Prosperina para Meta Quest 2: objeto Monocular y NPC guía.",
+      "Desarrollo y soporte del videojuego VR 'Bosque Virtual La Prosperina' para Meta Quest 2.",
+      "Participación en brainstorming y documentación técnica de nuevas funcionalidades.",
+      "Implementación de objetos interactivos y NPCs para el tutorial principal del videojuego.",
     ],
   },
 ];
@@ -359,7 +369,7 @@ export default function Portfolio() {
             <Card>
               <CardHeader>
                 <CardTitle>Resumen</CardTitle>
-                <CardDescription className="italic"><b>Experiencia más reciente:</b> Desarrollador Full‑Stack · Laravel, React, OpenApi - AsyncApi, TypeScript, MySQL · Microservicios y mensajería (RabbitMQ).</CardDescription>
+                <CardDescription className="italic"><b>Experiencia más reciente:</b> Desarrollador Full-Stack en FUNIBER · Laravel/Node.js + React/Vue · APIs documentadas con OpenAPI/AsyncAPI · MySQL/PostgreSQL · arquitectura de microservicios con RabbitMQ y WebSockets.</CardDescription>
               </CardHeader>
                 <CardContent className="text-sm text-muted-foreground space-y-2">
                   <p>Me especializo en entregar soluciones end‑to‑end: interfaces accesibles, APIs bien definidas y despliegues automatizados.</p>
@@ -371,6 +381,26 @@ export default function Portfolio() {
             </Card>
           </div>
         </div>
+      </Section>
+
+      {/* Services */}
+      <Section id="servicios" title="Servicios de Desarrollo de Software y Páginas Web" icon={<Globe className="w-5 h-5" />}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Servicios para Macará, Loja, Guayaquil y todo Ecuador</CardTitle>
+            <CardDescription>
+              Desarrollo soluciones digitales para negocios, profesionales y empresas que buscan mejorar su presencia online y sus procesos internos.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-2">
+              <li>Creación de páginas web corporativas, landing pages y portafolios optimizados para SEO.</li>
+              <li>Desarrollo de aplicaciones web Full-Stack con React, Laravel/Node.js y bases de datos SQL.</li>
+              <li>Integración de APIs, automatización de procesos y despliegues confiables en la nube.</li>
+              <li>Modernización de sistemas legacy y evolución hacia arquitecturas modulares y escalables.</li>
+            </ul>
+          </CardContent>
+        </Card>
       </Section>
 
       {/* Projects */}
@@ -476,7 +506,7 @@ export default function Portfolio() {
           <Card className="w-full min-w-0">
             <CardHeader>
               <CardTitle>¿Hablamos?</CardTitle>
-              <CardDescription>Completa el formulario y contacta conmigo por WhatsApp.</CardDescription>
+              <CardDescription>Si tienes una vacante o proyecto, compárteme el contexto y objetivos. Te respondo por WhatsApp o correo.</CardDescription>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={(e)=>{
@@ -524,8 +554,8 @@ export default function Portfolio() {
       <Section id="cv" title="Currículum" icon={<Database className="w-5 h-5" />}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Code2 className="w-5 h-5" /> ¿Estas Interesado?</CardTitle>
-            <CardDescription>Descarga a continuación mi CV para mas información o para incluirme en tu proceso de selección.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Code2 className="w-5 h-5" /> ¿Estás interesado?</CardTitle>
+            <CardDescription>Descarga mi CV actualizado para ver experiencia detallada, stack técnico, formación y logros relevantes para tu proceso.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex justify-center">
