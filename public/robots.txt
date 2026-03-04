@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kevelmun.dev/sitemap.xml
+Host: kevelmun.dev

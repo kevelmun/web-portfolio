@@ -117,17 +117,21 @@ const experiences = [
   },
 ];
 
-const Section = ({ id, title, icon, children }: { id: string; title: string; icon: React.ReactNode; children: React.ReactNode }) => (
-  <section id={id} className="py-16 scroll-mt-24">
-    <div className="max-w-6xl mx-auto px-4">
-      <div className="flex items-center gap-3 mb-8">
-        <div className="p-2 rounded-xl bg-primary/10 text-primary">{icon}</div>
-        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">{title}</h2>
+const Section = ({ id, title, icon, children }: { id: string; title: string; icon: React.ReactNode; children: React.ReactNode }) => {
+  const headingId = `${id}-title`;
+
+  return (
+    <section id={id} className="py-16 scroll-mt-24" aria-labelledby={headingId}>
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-2 rounded-xl bg-primary/10 text-primary">{icon}</div>
+          <h2 id={headingId} className="text-2xl sm:text-3xl font-semibold tracking-tight">{title}</h2>
+        </div>
+        {children}
       </div>
-      {children}
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // ——— Interactive Radar component ———
 function RadarProfiles({ darkMode }: { darkMode: boolean }) {
@@ -237,9 +241,15 @@ export default function Portfolio() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 text-foreground">
+      <a
+        href="#contenido-principal"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:shadow"
+      >
+        Saltar al contenido principal
+      </a>
       {/* Nav */}
       <header className="backdrop-blur supports-[backdrop-filter]:bg-background/70 sticky top-0 z-50 border-b">
-        <nav className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <nav className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between" aria-label="Navegación principal">
           <a href="#hero" className="font-semibold tracking-tight flex items-center gap-2">
             <Cpu className="w-5 h-5 align-middle" />
             <span>Kevin Muñoz</span>
@@ -260,12 +270,12 @@ export default function Portfolio() {
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </Button>
             <Button variant="ghost" size="icon" asChild>
-              <a href="https://github.com/kevelmun" target="_blank" rel="noreferrer" aria-label="GitHub">
+              <a href="https://github.com/kevelmun" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                 <Github className="w-5 h-5 align-middle" />
               </a>
             </Button>
             <Button variant="ghost" size="icon" asChild>
-              <a href="https://www.linkedin.com/in/kevelmun" target="_blank" rel="noreferrer" aria-label="LinkedIn">
+              <a href="https://www.linkedin.com/in/kevelmun" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
                 <Linkedin className="w-5 h-5 align-middle" />
               </a>
             </Button>
@@ -278,8 +288,9 @@ export default function Portfolio() {
         </nav>
       </header>
 
-      {/* Hero */}
-      <section id="hero" className="relative overflow-hidden">
+      <main id="contenido-principal">
+        {/* Hero */}
+        <section id="hero" className="relative overflow-hidden" aria-labelledby="hero-title">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-24 -left-24 size-72 rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute -bottom-24 -right-24 size-72 rounded-full bg-secondary/10 blur-3xl" />
@@ -287,7 +298,7 @@ export default function Portfolio() {
         <div className="max-w-6xl mx-auto px-4 py-20 md:py-28 grid md:grid-cols-2 gap-10 items-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <Badge className="mb-4" variant="secondary">Disponible para proyectos</Badge>
-            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight leading-tight">
+            <h1 id="hero-title" className="text-3xl sm:text-5xl font-bold tracking-tight leading-tight">
               Ingeniero en Ciencias de la Computación
             </h1>
             <div className="flex flex-wrap gap-2 mt-2">
@@ -316,7 +327,7 @@ export default function Portfolio() {
             <InteractiveTerminal darkMode={darkMode} />
           </motion.div>
         </div>
-      </section>
+        </section>
 
       {/* Sobre mí / Foto + Resumen + Perfiles & Radar */}
       <Section id="sobre-mi" title="Sobre mí" icon={<Code2 className="w-5 h-5" />}>
@@ -329,7 +340,11 @@ export default function Portfolio() {
               <CardContent>
                 <img
                   src="/images/Me.PNG"
-                  alt="Kevin Muñoz"
+                  alt="Foto profesional de Kevin Muñoz"
+                  loading="lazy"
+                  decoding="async"
+                  width={600}
+                  height={600}
                   className="w-full max-w-sm aspect-square object-cover rounded-2xl mx-auto shadow"
                 />
                 <p className="text-xs text-muted-foreground mt-3 text-center">Ecuatoriano - 24 años</p>
@@ -378,11 +393,11 @@ export default function Portfolio() {
                 <div className="flex gap-3">
                   {/* <Button variant="outline" size="sm" asChild>
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    <a href={p.links.demo} target="_blank" rel="noreferrer">Demo</a>
+                    <a href={p.links.demo} target="_blank" rel="noopener noreferrer">Demo</a>
                   </Button> */}
                   <Button variant="secondary" size="sm" asChild>
                     <Github className="w-4 h-4 mr-2" />
-                    <a href={p.links.code} target="_blank" rel="noreferrer">Código</a>
+                    <a href={p.links.code} target="_blank" rel="noopener noreferrer">Código</a>
                   </Button>
                 </div>
               </CardContent>
@@ -496,8 +511,8 @@ export default function Portfolio() {
               <CardDescription>Enlaces oficiales de contacto.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm break-words">
-                <div className="flex items-center gap-2"><Github className="w-5 h-5 align-middle" /><a className="underline-offset-4 hover:underline break-words" href="https://github.com/kevelmun" target="_blank" rel="noreferrer">github.com/kevelmun</a></div>
-                <div className="flex items-center gap-2"><Linkedin className="w-5 h-5 align-middle" /><a className="underline-offset-4 hover:underline break-words" href="https://www.linkedin.com/in/kevelmun" target="_blank" rel="noreferrer">linkedin.com/in/kevelmun</a></div>
+                <div className="flex items-center gap-2"><Github className="w-5 h-5 align-middle" /><a className="underline-offset-4 hover:underline break-words" href="https://github.com/kevelmun" target="_blank" rel="noopener noreferrer">github.com/kevelmun</a></div>
+                <div className="flex items-center gap-2"><Linkedin className="w-5 h-5 align-middle" /><a className="underline-offset-4 hover:underline break-words" href="https://www.linkedin.com/in/kevelmun" target="_blank" rel="noopener noreferrer">linkedin.com/in/kevelmun</a></div>
                 <div className="flex items-center gap-2"><Mail className="w-5 h-5 align-middle" /><a className="underline-offset-4 hover:underline break-words" href="mailto:3lihan.m.c@gmail.com">3lihan.m.c@gmail.com</a></div>
                 <div className="flex items-center gap-2"><Globe className="w-5 h-5 align-middle" /><span>Guayaquil, Ecuador · +593 93 913 3960</span></div>
             </CardContent>
@@ -535,6 +550,7 @@ export default function Portfolio() {
           </CardContent>
         </Card>
       </Section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t">
