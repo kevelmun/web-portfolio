@@ -1,51 +1,53 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 216 32% 97%;
+    --foreground: 223 32% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 223 32% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-  --primary: 221 89% 12%; /* #0F172B */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --popover-foreground: 223 32% 14%;
+    --primary: 188 89% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 94% 92%;
+    --secondary-foreground: 223 32% 14%;
+    --muted: 214 35% 92%;
+    --muted-foreground: 221 16% 41%;
+    --accent: 187 44% 90%;
+    --accent-foreground: 223 32% 14%;
+    --destructive: 0 75% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 25% 82%;
+    --input: 215 25% 82%;
+    --ring: 188 89% 36%;
+    --radius: 0.9rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 217.2 32.6% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91% 60%; /* Color azul brillante para modo oscuro */
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 70%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 217.2 91% 60%;
+    --background: 222 44% 10%;
+    --foreground: 210 40% 96%;
+    --card: 223 35% 14%;
+    --card-foreground: 210 40% 96%;
+    --popover: 223 35% 14%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 188 88% 58%;
+    --primary-foreground: 223 38% 10%;
+    --secondary: 33 29% 24%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 223 24% 20%;
+    --muted-foreground: 215 20% 74%;
+    --accent: 220 23% 21%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 63% 38%;
+    --destructive-foreground: 210 40% 96%;
+    --border: 222 20% 30%;
+    --input: 222 20% 30%;
+    --ring: 188 88% 58%;
   }
 }
 
@@ -53,36 +55,124 @@
   * {
     @apply border-border;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: "Manrope", sans-serif;
+    min-height: 100vh;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-display {
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  code,
+  pre,
+  .font-mono {
+    font-family: "IBM Plex Mono", monospace;
   }
 }
 
-/* Smooth scroll + reveal animation */
-html {
-  scroll-behavior: smooth;
+.portfolio-shell {
+  background:
+    radial-gradient(1200px 500px at 12% -10%, hsl(var(--primary) / 0.1), transparent 58%),
+    radial-gradient(900px 420px at 88% 2%, hsl(var(--secondary) / 0.42), transparent 62%),
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--background)) 100%);
 }
 
-/* reveal base */
-.reveal {
-  opacity: 0;
-  transform: translateY(12px) scale(0.998);
-  transition: opacity 620ms cubic-bezier(.22,.9,.35,1), transform 620ms cubic-bezier(.22,.9,.35,1);
-  will-change: opacity, transform;
+.portfolio-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, hsl(var(--border) / 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border) / 0.2) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at center, black 25%, transparent 85%);
 }
 
-/* visible state */
-.reveal--visible {
-  opacity: 1;
-  transform: none;
+.portfolio-orb {
+  position: absolute;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 9999px;
+  filter: blur(82px);
+  opacity: 0.4;
+  animation: float-orb 16s ease-in-out infinite;
 }
 
-/* smaller motion for reduced preferences */
+.portfolio-orb-left {
+  left: -7rem;
+  top: 8rem;
+  background: hsl(var(--primary) / 0.44);
+}
+
+.portfolio-orb-right {
+  right: -9rem;
+  top: 16rem;
+  background: hsl(var(--secondary) / 0.4);
+  animation-delay: -4s;
+}
+
+.hero-noise {
+  opacity: 0.45;
+  background-image: radial-gradient(hsl(var(--foreground) / 0.055) 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+  mask-image: linear-gradient(180deg, black 0%, transparent 100%);
+}
+
+.portfolio-card {
+  background: linear-gradient(160deg, hsl(var(--card) / 0.88) 0%, hsl(var(--card) / 0.72) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 12px 40px hsl(219 34% 10% / 0.08),
+    inset 0 1px 0 hsl(0 0% 100% / 0.3);
+  transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+}
+
+.dark .portfolio-card {
+  box-shadow:
+    0 14px 36px hsl(222 62% 4% / 0.35),
+    inset 0 1px 0 hsl(0 0% 100% / 0.06);
+}
+
+.portfolio-card:hover {
+  transform: translateY(-3px);
+  border-color: hsl(var(--primary) / 0.32);
+}
+
+@keyframes float-orb {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -20px, 0) scale(1.08);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .reveal, .reveal--visible {
-    transition: none !important;
-    transform: none !important;
-    opacity: 1 !important;
+  html {
+    scroll-behavior: auto;
+  }
+
+  .portfolio-orb {
+    animation: none;
+  }
+
+  .portfolio-card,
+  .portfolio-card:hover {
+    transform: none;
+    transition: none;
   }
 }
