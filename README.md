@@ -140,7 +140,7 @@ Key files and folders:
 		- `InteractiveTerminal.tsx` – Animated “terminal” used in the hero
 		- `Portfolio.tsx` – Main page sections (hero, projects, skills, contact, etc.)
 - `index.html` – Vite HTML entry
-- `index.css` – Tailwind tokens, dark theme, and small animations
+- `src/index.css` – Tailwind tokens, light/dark theme variables, and small animations
 - `public/` – Static assets served at site root
 - `vite.config.ts` – Vite config, including `@` alias to `src`
 - `tailwind.config.js` – Tailwind setup + animate plugin
@@ -162,6 +162,20 @@ Update the following assets and content to personalize:
 - CV download: place your file at `public/cv-kevin-munoz.pdf`, or update the link in `Portfolio.tsx` (section “CV”).
 - Social links, contact info, projects, and experience: edit values in `src/components/Portfolio.tsx`.
 - Colors and theme: tweak CSS variables in `src/index.css` and Tailwind theme tokens in `tailwind.config.js`.
+
+### Theme Tokens (Light + Dark)
+
+The project uses semantic CSS variables in `src/index.css`:
+
+- `:root` → light mode defaults
+- `.dark` → dark mode overrides
+
+Core tokens:
+
+- `--background`, `--foreground`, `--card`, `--border`, `--muted`
+- `--primary`, `--secondary`, `--accent`, `--ring`, `--destructive`
+
+When styling components, prefer semantic classes (`bg-background`, `text-foreground`, `border-border`, `bg-card`, `text-muted-foreground`, `bg-primary`) instead of fixed hex values so both themes stay consistent.
 
 ## Environment variables
 
