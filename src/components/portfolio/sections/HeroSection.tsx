@@ -1,94 +1,425 @@
-import { motion } from "framer-motion";
-import { ArrowRight, Download, Sparkles } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { InteractiveTerminal } from "@/components/InteractiveTerminal";
-import { itemReveal, staggerContainer } from "@/components/portfolio/motion";
-import { cn } from "@/lib/utils";
+import * as React from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  Code,
+  Gamepad2,
+  MessageSquare,
+  Sparkles,
+  X,
+} from "lucide-react";
+import RainingLetters from "@/components/ui/modern-animated-hero-section";
+
+class TextScramble {
+  el: HTMLElement;
+  chars: string;
+  queue: Array<{
+    from: string;
+    to: string;
+    start: number;
+    end: number;
+    char?: string;
+  }>;
+  frame: number;
+  frameRequest: number;
+  resolve: (value: void | PromiseLike<void>) => void;
+
+  constructor(el: HTMLElement) {
+    this.el = el;
+    this.chars = "!<>-_\\/[]{}=+*^?#";
+    this.queue = [];
+    this.frame = 0;
+    this.frameRequest = 0;
+    this.resolve = () => {};
+    this.update = this.update.bind(this);
+  }
+
+  setText(newText: string) {
+    const oldText = this.el.innerText;
+    const length = Math.max(oldText.length, newText.length);
+    const promise = new Promise<void>((resolve) => {
+      this.resolve = resolve;
+    });
+    this.queue = [];
+
+    for (let i = 0; i < length; i += 1) {
+      const from = oldText[i] || "";
+      const to = newText[i] || "";
+      const start = Math.floor(Math.random() * 16);
+      const end = start + Math.floor(Math.random() * 20);
+      this.queue.push({ from, to, start, end });
+    }
+
+    cancelAnimationFrame(this.frameRequest);
+    this.frame = 0;
+    this.update();
+    return promise;
+  }
+
+  update() {
+    let output = "";
+    let complete = 0;
+
+    for (let i = 0, n = this.queue.length; i < n; i += 1) {
+      let { from, to, start, end, char } = this.queue[i];
+
+      if (this.frame >= end) {
+        complete += 1;
+        output += to;
+      } else if (this.frame >= start) {
+        if (!char || Math.random() < 0.28) {
+          char = this.chars[Math.floor(Math.random() * this.chars.length)];
+          this.queue[i].char = char;
+        }
+        output += `<span class="hero-dud">${char}</span>`;
+      } else {
+        output += from;
+      }
+    }
+
+    this.el.innerHTML = output;
+    if (complete === this.queue.length) {
+      this.resolve();
+      return;
+    }
+
+    this.frameRequest = requestAnimationFrame(this.update);
+    this.frame += 1;
+  }
+
+  cleanup() {
+    cancelAnimationFrame(this.frameRequest);
+  }
+}
+
+interface ScrambledRoleProps {
+  phrases: string[];
+  prefersReducedMotion: boolean;
+}
+
+function ScrambledRole({ phrases, prefersReducedMotion }: ScrambledRoleProps) {
+  const elementRef = React.useRef<HTMLSpanElement>(null);
+  const scrambleRef = React.useRef<TextScramble | null>(null);
+
+  React.useEffect(() => {
+    if (!elementRef.current || phrases.length === 0) {
+      return;
+    }
+
+    if (prefersReducedMotion) {
+      elementRef.current.textContent = phrases[0];
+      return;
+    }
+
+    scrambleRef.current = new TextScramble(elementRef.current);
+    let counter = 0;
+    let timeoutId: number | undefined;
+    let cancelled = false;
+
+    const run = () => {
+      if (!scrambleRef.current || cancelled) {
+        return;
+      }
+
+      scrambleRef.current.setText(phrases[counter]).then(() => {
+        if (cancelled) {
+          return;
+        }
+        timeoutId = window.setTimeout(run, 1400);
+      });
+      counter = (counter + 1) % phrases.length;
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      scrambleRef.current?.cleanup();
+      scrambleRef.current = null;
+    };
+  }, [phrases, prefersReducedMotion]);
+
+  return (
+    <span ref={elementRef} className="inline-block min-h-[2.5rem]">
+      {phrases[0] ?? ""}
+    </span>
+  );
+}
 
 interface HeroSectionProps {
   darkMode: boolean;
+  name: string;
   headline: string;
   intro: string;
   availability: string;
   tags: string[];
+  konamiActivated: boolean;
 }
 
 export function HeroSection({
-  darkMode,
+  darkMode: _darkMode,
+  name,
   headline,
   intro,
   availability,
   tags,
+  konamiActivated,
 }: HeroSectionProps) {
+  const prefersReducedMotion = useReducedMotion() ?? false;
+  const [easterEggOpen, setEasterEggOpen] = React.useState(false);
+  const [namePulseToken, setNamePulseToken] = React.useState<number | null>(null);
+  const [, setNameClickCount] = React.useState(0);
+  const clickResetTimeoutRef = React.useRef<number | null>(null);
+
+  const roleCycle = React.useMemo(() => {
+    const values = [headline, ...tags].filter((value) => value.trim().length > 0);
+    return Array.from(new Set(values));
+  }, [headline, tags]);
+
+  const onNameClick = () => {
+    setNamePulseToken(Date.now());
+    setNameClickCount((currentCount) => {
+      const nextCount = currentCount + 1;
+
+      if (clickResetTimeoutRef.current) {
+        window.clearTimeout(clickResetTimeoutRef.current);
+      }
+
+      if (nextCount >= 3) {
+        setEasterEggOpen(true);
+        return 0;
+      }
+
+      clickResetTimeoutRef.current = window.setTimeout(() => {
+        setNameClickCount(0);
+      }, 1200);
+
+      return nextCount;
+    });
+  };
+
+  React.useEffect(
+    () => () => {
+      if (clickResetTimeoutRef.current) {
+        window.clearTimeout(clickResetTimeoutRef.current);
+      }
+    },
+    []
+  );
+
+  React.useEffect(() => {
+    if (!easterEggOpen) {
+      return;
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setEasterEggOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [easterEggOpen]);
+
   return (
-    <section id="hero" aria-labelledby="hero-title" className="relative overflow-hidden py-20 md:py-28">
-      <div className="hero-noise pointer-events-none absolute inset-0" />
-      <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 lg:grid-cols-[1.08fr_0.92fr]">
+    <section id="hero" aria-labelledby="hero-title" className="relative flex min-h-screen items-center overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 z-0 opacity-18">
+        <RainingLetters />
+      </div>
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(203,166,247,0.16),transparent_62%)]" />
+      <motion.div
+        initial={prefersReducedMotion ? undefined : { opacity: 0, y: 6 }}
+        animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+        transition={prefersReducedMotion ? undefined : { duration: 0.5, delay: 0.55 }}
+        className="pointer-events-none absolute right-3 bottom-8 z-[5] rotate-[-10deg] rounded-md border border-border/45 bg-card/25 px-2 py-1 font-mono text-[10px] text-muted-foreground/45 md:right-8 md:bottom-10"
+      >
+        <span className="inline-flex items-center gap-1">
+          <Gamepad2 className="h-3 w-3 text-accent/55" />
+          Pss, prueba una secuencia clasica con flechas y luego B + A.
+        </span>
+      </motion.div>
+
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center gap-12 px-4 md:flex-row md:px-8">
         <motion.div
-          variants={staggerContainer}
-          initial="hidden"
-          animate="visible"
-          className="relative"
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7 }}
+          className="flex flex-1 flex-col items-center text-center"
         >
-          <motion.div variants={itemReveal}>
-            <Badge className="rounded-full border border-primary/20 bg-primary/15 px-4 py-1 text-xs font-semibold tracking-[0.16em] text-primary uppercase">
-              <Sparkles className="mr-2 h-3.5 w-3.5" />
-              {availability}
-            </Badge>
-          </motion.div>
+          <div className="mb-4 flex items-center justify-center gap-2">
+            <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
+            <span className="h-3 w-3 animate-pulse rounded-full bg-yellow-500 [animation-delay:120ms]" />
+            <span className="h-3 w-3 animate-pulse rounded-full bg-green-500 [animation-delay:240ms]" />
+            <span className="ml-2 font-mono text-xs text-muted-foreground">v.1.0.4 loaded</span>
+          </div>
 
-          <motion.h1
-            variants={itemReveal}
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/15 px-4 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            {availability}
+          </div>
+
+          <h1
             id="hero-title"
-            className="mt-5 font-display text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl"
+            className="mt-6 font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl"
           >
-            {headline}
-          </motion.h1>
+            <motion.button
+              type="button"
+              onClick={onNameClick}
+              whileHover={prefersReducedMotion ? undefined : { scale: 1.01, y: -2 }}
+              whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+              className="group relative inline-flex cursor-pointer items-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors hover:bg-secondary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label="Haz tres clicks para abrir el easter egg secreto"
+            >
+              <span className="text-primary transition-transform duration-200 group-hover:-translate-x-0.5">&lt;</span>
+              <span>{name}</span>
+              <span className="text-primary transition-transform duration-200 group-hover:translate-x-0.5">/&gt;</span>
+              <AnimatePresence>
+                {namePulseToken ? (
+                  <motion.span
+                    key={namePulseToken}
+                    className="pointer-events-none absolute inset-0 rounded-xl border border-primary/80"
+                    initial={{ opacity: 0.68, scale: 0.95 }}
+                    animate={{ opacity: 0, scale: 1.16 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.45, ease: "easeOut" }}
+                    onAnimationComplete={() => setNamePulseToken(null)}
+                  />
+                ) : null}
+              </AnimatePresence>
+            </motion.button>
+          </h1>
 
-          <motion.p variants={itemReveal} className="mt-6 max-w-xl text-base text-muted-foreground sm:text-lg">
+          <div className="mt-5 flex min-h-[4.25rem] items-center justify-center font-mono text-xl text-foreground/90 md:text-2xl">
+            <span className="mr-2 text-primary">$</span>
+            <ScrambledRole phrases={roleCycle.length > 0 ? roleCycle : [headline]} prefersReducedMotion={prefersReducedMotion} />
+          </div>
+
+          <p className="mt-4 max-w-3xl rounded-2xl border border-primary/30 bg-card/55 px-5 py-4 text-lg text-foreground/85">
             {intro}
-          </motion.p>
+          </p>
 
-          <motion.div variants={itemReveal} className="mt-6 flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-border/80 bg-card/80 px-3 py-1 text-xs font-medium text-muted-foreground"
-              >
-                {tag}
-              </span>
-            ))}
-          </motion.div>
-
-          <motion.div variants={itemReveal} className="mt-8 flex flex-wrap items-center gap-3">
-            <a href="#proyectos" className={cn(buttonVariants({ variant: "default" }), "rounded-full px-5")}> 
-              Explorar proyectos
-              <ArrowRight className="ml-2 h-4 w-4" />
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <a
+              href="#contacto"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[linear-gradient(120deg,var(--primary),var(--accent))] px-6 py-3 font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Contactar
             </a>
             <a
-              href="/cv-kevin-munoz.pdf"
-              download="CV-Kevin-Munoz.pdf"
-              className={cn(buttonVariants({ variant: "outline" }), "rounded-full border-primary/30 bg-transparent px-5")}
+              href="#proyectos"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-background/60 px-6 py-3 font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
             >
-              <Download className="mr-2 h-4 w-4" />
-              Descargar CV
+              <Code className="h-4 w-4" />
+              Ver Proyectos
             </a>
-          </motion.div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-          className="relative"
-        >
-          <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-primary/20 via-secondary/25 to-transparent blur-2xl" />
-          <div className="relative">
-            <InteractiveTerminal darkMode={darkMode} />
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {easterEggOpen ? (
+          <motion.div
+            className="fixed inset-0 z-[95] flex items-center justify-center px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <button
+              type="button"
+              aria-label="Cerrar modal easter egg"
+              className="absolute inset-0 cursor-pointer bg-background/80 backdrop-blur-sm"
+              onClick={() => setEasterEggOpen(false)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="easter-egg-title"
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 270, damping: 24 }}
+              className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-[0_28px_90px_rgba(15,23,42,0.3)] dark:shadow-[0_28px_90px_rgba(15,23,42,0.65)]"
+            >
+              <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rotate-12 rounded-2xl bg-primary/18" />
+              <button
+                type="button"
+                onClick={() => setEasterEggOpen(false)}
+                className="absolute right-3 top-3 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-border bg-background/55 text-foreground transition-colors hover:border-primary hover:text-primary"
+                aria-label="Cerrar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-primary/45 bg-primary/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                Secret Developer Mode
+              </div>
+
+              <h3 id="easter-egg-title" className="font-display text-2xl font-bold text-foreground">
+                🎉 Easter Egg encontrado!
+              </h3>
+              <p className="mt-3 text-base text-foreground/90">
+                Has desbloqueado el modo desarrollador secreto.
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tip: abre la terminal interactiva para explorar comandos ocultos del portfolio.
+              </p>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setEasterEggOpen(false)}
+                  className="inline-flex cursor-pointer items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  Cerrar y continuar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {konamiActivated ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-background/90 px-4 backdrop-blur-sm"
+          >
+            <motion.div
+              animate={
+                prefersReducedMotion
+                  ? { scale: 1 }
+                  : {
+                      rotate: [0, 6, -6, 0],
+                      scale: [1, 1.12, 1],
+                    }
+              }
+              transition={prefersReducedMotion ? undefined : { duration: 2, repeat: Number.POSITIVE_INFINITY }}
+              className="text-center"
+            >
+              <div className="mb-4 text-8xl">🎮</div>
+              <h2 className="bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-4xl font-bold text-transparent">
+                ¡Konami Code Activado!
+              </h2>
+              <p className="mt-4 text-xl text-foreground/85">Has desbloqueado un proyecto bonus!</p>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <style>{`
+        .hero-dud {
+          color: var(--primary);
+          opacity: 0.72;
+        }
+      `}</style>
     </section>
   );
 }

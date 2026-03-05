@@ -25,14 +25,14 @@ export function SectionBlock({
     <motion.section
       id={id}
       aria-labelledby={`${id}-title`}
-      className={cn("scroll-mt-28 py-16 md:py-20", className)}
+      className={cn("scroll-mt-28 py-8 md:py-10", className)}
       variants={sectionReveal}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
     >
       <div className="mx-auto max-w-6xl px-4">
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
               <Icon className="h-3.5 w-3.5" />

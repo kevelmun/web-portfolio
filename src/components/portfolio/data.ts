@@ -4,6 +4,7 @@ import {
   Code2,
   Cpu,
   Database,
+  Gamepad2,
   Github,
   Globe,
   Linkedin,
@@ -130,6 +131,19 @@ export const projects: ProjectItem[] = [
     icon: Mic,
   },
 ];
+
+export const universityEasterProject: ProjectItem = {
+  title: "Scape from the Dark (Universitario)",
+  description:
+    "Videojuego de etapa universitaria publicado en Itch.io. Es un proyecto amateur hecho como parte de formación y experimentación temprana en desarrollo de juegos.",
+  tags: ["Godot", "GDScript", "Game Design", "Proyecto Universitario"],
+  codeUrl: "https://kevelmun.itch.io/scape-from-the-dark",
+  impact:
+    "Recuerdo técnico de mis tiempos universitarios: simple, nostálgico y enfocado en aprendizaje.",
+  icon: Gamepad2,
+  isEasterEgg: true,
+  actionLabel: "Jugar en Itch.io",
+};
 
 export const experiences: ExperienceItem[] = [
   {
@@ -272,7 +286,7 @@ export const profile = {
   name: "Kevin Elihan Muñoz Calva",
   headline: "Ingeniero en Ciencias de la Computación",
   intro:
-    "Diseño y construyo productos digitales con enfoque en escalabilidad, claridad técnica y resultados medibles. Combino desarrollo Full-Stack con experiencia en visión por computadora para resolver problemas de negocio complejos.",
+    "Diseño y construyo productos digitales con enfoque en escalabilidad, claridad técnica y resultados medibles. Combino desarrollo Full-Stack con experiencia en IA para producción y visión por computadora para resolver problemas de negocio complejos.",
   location: "Guayaquil, Ecuador",
   phone: "+593 93 913 3960",
   availability: "Disponible para proyectos y posiciones remotas.",

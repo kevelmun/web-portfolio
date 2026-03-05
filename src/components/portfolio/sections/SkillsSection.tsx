@@ -53,8 +53,8 @@ export function SkillsSection({ icon, categories }: SkillsSectionProps) {
                   {category.items.map((item) => (
                     <Badge
                       key={item}
-                      variant="secondary"
-                      className="rounded-full border border-border/70 bg-background/75 px-3 py-1 text-xs"
+                      variant="outline"
+                      className="rounded-full border border-primary/35 bg-secondary/25 px-3 py-1 text-xs text-foreground hover:bg-secondary/40"
                     >
                       {item}
                     </Badge>

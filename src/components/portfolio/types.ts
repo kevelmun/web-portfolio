@@ -29,6 +29,8 @@ export interface ProjectItem {
   codeUrl: string;
   impact: string;
   icon: LucideIcon;
+  isEasterEgg?: boolean;
+  actionLabel?: string;
 }
 
 export interface ExperienceItem {
