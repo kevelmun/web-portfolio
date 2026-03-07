@@ -23,14 +23,10 @@ import {
   impactMetrics,
   navItems,
   profile,
-  projects,
   sectionIcons,
   serviceItems,
   skillCategories,
-  universityEasterProject,
 } from "@/components/portfolio/data";
-import { useDarkMode } from "@/components/portfolio/hooks/useDarkMode";
-import { useKonamiCode } from "@/components/portfolio/hooks/useKonamiCode";
 import { AboutSection } from "@/components/portfolio/sections/AboutSection";
 import { ContactSection } from "@/components/portfolio/sections/ContactSection";
 import { ExperienceSection } from "@/components/portfolio/sections/ExperienceSection";
@@ -39,6 +35,7 @@ import { ProjectsSection } from "@/components/portfolio/sections/ProjectsSection
 import { ResumeSection } from "@/components/portfolio/sections/ResumeSection";
 import { ServicesSection } from "@/components/portfolio/sections/ServicesSection";
 import { SkillsSection } from "@/components/portfolio/sections/SkillsSection";
+import type { ProjectItem } from "@/components/portfolio/types";
 
 const floatingNavItems = [
   { id: "hero", label: "Inicio", icon: Home },
@@ -58,10 +55,22 @@ const bootMessages = [
   "Sistema listo.",
 ];
 
-export default function Portfolio() {
+interface MainPortfolioProps {
+  darkMode: boolean;
+  toggleDarkMode: () => void;
+  konamiActivated: boolean;
+  visibleProjects: ProjectItem[];
+  onEnterWorkspace: () => void;
+}
+
+export default function MainPortfolio({
+  darkMode,
+  toggleDarkMode,
+  konamiActivated,
+  visibleProjects,
+  onEnterWorkspace,
+}: MainPortfolioProps) {
   const prefersReducedMotion = useReducedMotion();
-  const { darkMode, toggleDarkMode } = useDarkMode();
-  const { activated: konamiActivated, unlocked: universityProjectUnlocked } = useKonamiCode();
 
   const [loadingProgress, setLoadingProgress] = React.useState(0);
   const [loadingMessage, setLoadingMessage] = React.useState(bootMessages[0]);
@@ -71,10 +80,6 @@ export default function Portfolio() {
   const [showFloatingNav, setShowFloatingNav] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState<(typeof floatingNavItems)[number]["id"]>("hero");
   const [terminalOpen, setTerminalOpen] = React.useState(false);
-  const visibleProjects = React.useMemo(
-    () => (universityProjectUnlocked ? [...projects, universityEasterProject] : projects),
-    [universityProjectUnlocked]
-  );
 
   const particles = React.useMemo(
     () =>
@@ -247,6 +252,7 @@ export default function Portfolio() {
           availability={profile.availability}
           tags={heroTags}
           konamiActivated={konamiActivated}
+          onEnterWorkspace={onEnterWorkspace}
         />
         <AboutSection
           icon={sectionIcons.about}
@@ -291,7 +297,10 @@ export default function Portfolio() {
             exit={{ opacity: 0, y: 20 }}
             className="fixed bottom-24 left-4 z-[72] md:left-6"
           >
-            <InteractiveTerminal onClose={() => setTerminalOpen(false)} />
+            <InteractiveTerminal
+              onClose={() => setTerminalOpen(false)}
+              projects={visibleProjects}
+            />
           </motion.div>
         ) : null}
       </AnimatePresence>
