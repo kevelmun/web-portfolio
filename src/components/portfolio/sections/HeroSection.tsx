@@ -156,6 +156,7 @@ interface HeroSectionProps {
   availability: string;
   tags: string[];
   konamiActivated: boolean;
+  onEnterWorkspace: () => void;
 }
 
 export function HeroSection({
@@ -166,12 +167,14 @@ export function HeroSection({
   availability,
   tags,
   konamiActivated,
+  onEnterWorkspace,
 }: HeroSectionProps) {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const [easterEggOpen, setEasterEggOpen] = React.useState(false);
   const [namePulseToken, setNamePulseToken] = React.useState<number | null>(null);
   const [, setNameClickCount] = React.useState(0);
   const clickResetTimeoutRef = React.useRef<number | null>(null);
+  const workspaceTransitionTimeoutRef = React.useRef<number | null>(null);
 
   const roleCycle = React.useMemo(() => {
     const values = [headline, ...tags].filter((value) => value.trim().length > 0);
@@ -200,10 +203,25 @@ export function HeroSection({
     });
   };
 
+  const closeAndEnterWorkspace = React.useCallback(() => {
+    setEasterEggOpen(false);
+
+    if (workspaceTransitionTimeoutRef.current) {
+      window.clearTimeout(workspaceTransitionTimeoutRef.current);
+    }
+
+    workspaceTransitionTimeoutRef.current = window.setTimeout(() => {
+      onEnterWorkspace();
+    }, prefersReducedMotion ? 0 : 180);
+  }, [onEnterWorkspace, prefersReducedMotion]);
+
   React.useEffect(
     () => () => {
       if (clickResetTimeoutRef.current) {
         window.clearTimeout(clickResetTimeoutRef.current);
+      }
+      if (workspaceTransitionTimeoutRef.current) {
+        window.clearTimeout(workspaceTransitionTimeoutRef.current);
       }
     },
     []
@@ -216,13 +234,13 @@ export function HeroSection({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setEasterEggOpen(false);
+        closeAndEnterWorkspace();
       }
     };
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [easterEggOpen]);
+  }, [closeAndEnterWorkspace, easterEggOpen]);
 
   return (
     <section id="hero" aria-labelledby="hero-title" className="relative flex min-h-screen items-center overflow-hidden">
@@ -235,7 +253,7 @@ export function HeroSection({
         initial={prefersReducedMotion ? undefined : { opacity: 0, y: 6 }}
         animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
         transition={prefersReducedMotion ? undefined : { duration: 0.5, delay: 0.55 }}
-        className="pointer-events-none absolute right-3 bottom-8 z-[5] rotate-[-10deg] rounded-md border border-border/45 bg-card/25 px-2 py-1 font-mono text-[10px] text-muted-foreground/45 md:right-8 md:bottom-10"
+        className="pointer-events-none absolute right-3 bottom-8 z-[5] hidden rotate-[-10deg] rounded-md border border-border/45 bg-card/25 px-2 py-1 font-mono text-[10px] text-muted-foreground/45 md:block md:right-8 md:bottom-10"
       >
         <span className="inline-flex items-center gap-1">
           <Gamepad2 className="h-3 w-3 text-accent/55" />
@@ -333,7 +351,7 @@ export function HeroSection({
               type="button"
               aria-label="Cerrar modal easter egg"
               className="absolute inset-0 cursor-pointer bg-background/80 backdrop-blur-sm"
-              onClick={() => setEasterEggOpen(false)}
+              onClick={closeAndEnterWorkspace}
             />
             <motion.div
               role="dialog"
@@ -348,7 +366,7 @@ export function HeroSection({
               <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rotate-12 rounded-2xl bg-primary/18" />
               <button
                 type="button"
-                onClick={() => setEasterEggOpen(false)}
+                onClick={closeAndEnterWorkspace}
                 className="absolute right-3 top-3 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-border bg-background/55 text-foreground transition-colors hover:border-primary hover:text-primary"
                 aria-label="Cerrar"
               >
@@ -361,22 +379,22 @@ export function HeroSection({
               </div>
 
               <h3 id="easter-egg-title" className="font-display text-2xl font-bold text-foreground">
-                🎉 Easter Egg encontrado!
+                Easter egg encontrado
               </h3>
               <p className="mt-3 text-base text-foreground/90">
-                Has desbloqueado el modo desarrollador secreto.
+                El portfolio va a cambiar al workspace oculto con layout tipo IDE.
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tip: abre la terminal interactiva para explorar comandos ocultos del portfolio.
+                Cerrar este modal con overlay, tecla Escape, icono o CTA te lleva directo a esa vista.
               </p>
 
               <div className="mt-6 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setEasterEggOpen(false)}
+                  onClick={closeAndEnterWorkspace}
                   className="inline-flex cursor-pointer items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                 >
-                  Cerrar y continuar
+                  Entrar al workspace
                 </button>
               </div>
             </motion.div>

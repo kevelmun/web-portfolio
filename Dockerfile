@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies for the image layer; compose startup will sync again if package files change.
+RUN npm ci
 
 # Copy project files
 COPY . .
