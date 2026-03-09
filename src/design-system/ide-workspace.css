@@ -84,7 +84,8 @@
   --ide-badge-md-text: var(--chart-4);
   background: var(--ide-shell);
   color: var(--ide-text);
-  height: 100vh;
+  min-height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   font-family: var(--font-sans);
 }
@@ -205,5 +206,17 @@
 @media (max-width: 1023px) {
   .ide-menubar {
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .ide-menubar {
+    gap: 0.75rem;
+    padding: 0 0.75rem;
+  }
+
+  .ide-statusbar {
+    padding: 0 0.75rem;
+    font-size: 11px;
   }
 }
