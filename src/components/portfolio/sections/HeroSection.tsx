@@ -159,6 +159,24 @@ interface HeroSectionProps {
   onEnterWorkspace: () => void;
 }
 
+interface NameClickFeedback {
+  token: number;
+  count: number;
+}
+
+const NAME_HINT_ANIMATION = {
+  x: [0, -1.4, 1.4, -1, 0.85, 0],
+  rotate: [0, -0.55, 0.55, -0.35, 0.2, 0],
+};
+
+const NAME_HINT_TRANSITION = {
+  duration: 0.72,
+  ease: "easeInOut" as const,
+  repeat: Number.POSITIVE_INFINITY,
+  repeatDelay: 4.4,
+  delay: 2.35,
+};
+
 export function HeroSection({
   darkMode: _darkMode,
   name,
@@ -172,8 +190,11 @@ export function HeroSection({
   const prefersReducedMotion = useReducedMotion() ?? false;
   const [easterEggOpen, setEasterEggOpen] = React.useState(false);
   const [namePulseToken, setNamePulseToken] = React.useState<number | null>(null);
-  const [, setNameClickCount] = React.useState(0);
+  const [nameClickCount, setNameClickCount] = React.useState(0);
+  const [nameClickFeedback, setNameClickFeedback] = React.useState<NameClickFeedback | null>(null);
   const clickResetTimeoutRef = React.useRef<number | null>(null);
+  const easterEggRevealTimeoutRef = React.useRef<number | null>(null);
+  const nameClickCountRef = React.useRef(0);
   const workspaceTransitionTimeoutRef = React.useRef<number | null>(null);
 
   const roleCycle = React.useMemo(() => {
@@ -181,29 +202,49 @@ export function HeroSection({
     return Array.from(new Set(values));
   }, [headline, tags]);
 
+  const nameAriaLabel =
+    nameClickCount > 0
+      ? `Haz tres clicks para abrir el easter egg secreto. Llevas ${nameClickCount} de 3.`
+      : "Haz tres clicks para abrir el easter egg secreto";
+
   const onNameClick = () => {
-    setNamePulseToken(Date.now());
-    setNameClickCount((currentCount) => {
-      const nextCount = currentCount + 1;
+    if (easterEggRevealTimeoutRef.current) {
+      return;
+    }
 
-      if (clickResetTimeoutRef.current) {
-        window.clearTimeout(clickResetTimeoutRef.current);
-      }
+    const token = Date.now() + Math.random();
+    const nextCount = nameClickCountRef.current + 1;
 
-      if (nextCount >= 3) {
+    nameClickCountRef.current = nextCount;
+    setNameClickCount(nextCount);
+    setNamePulseToken(token);
+    setNameClickFeedback({ token, count: nextCount });
+
+    if (clickResetTimeoutRef.current) {
+      window.clearTimeout(clickResetTimeoutRef.current);
+    }
+
+    if (nextCount >= 3) {
+      nameClickCountRef.current = 0;
+      setNameClickCount(0);
+      easterEggRevealTimeoutRef.current = window.setTimeout(() => {
         setEasterEggOpen(true);
-        return 0;
-      }
+        easterEggRevealTimeoutRef.current = null;
+      }, prefersReducedMotion ? 0 : 180);
+      return;
+    }
 
-      clickResetTimeoutRef.current = window.setTimeout(() => {
-        setNameClickCount(0);
-      }, 1200);
-
-      return nextCount;
-    });
+    clickResetTimeoutRef.current = window.setTimeout(() => {
+      nameClickCountRef.current = 0;
+      setNameClickCount(0);
+    }, 1200);
   };
 
-  const closeAndEnterWorkspace = React.useCallback(() => {
+  const closeEasterEgg = React.useCallback(() => {
+    setEasterEggOpen(false);
+  }, []);
+
+  const enterWorkspaceFromModal = React.useCallback(() => {
     setEasterEggOpen(false);
 
     if (workspaceTransitionTimeoutRef.current) {
@@ -220,6 +261,9 @@ export function HeroSection({
       if (clickResetTimeoutRef.current) {
         window.clearTimeout(clickResetTimeoutRef.current);
       }
+      if (easterEggRevealTimeoutRef.current) {
+        window.clearTimeout(easterEggRevealTimeoutRef.current);
+      }
       if (workspaceTransitionTimeoutRef.current) {
         window.clearTimeout(workspaceTransitionTimeoutRef.current);
       }
@@ -234,13 +278,13 @@ export function HeroSection({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        closeAndEnterWorkspace();
+        closeEasterEgg();
       }
     };
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [closeAndEnterWorkspace, easterEggOpen]);
+  }, [closeEasterEgg, easterEggOpen]);
 
   return (
     <section id="hero" aria-labelledby="hero-title" className="relative flex min-h-screen items-center overflow-hidden">
@@ -257,7 +301,7 @@ export function HeroSection({
       >
         <span className="inline-flex items-center gap-1">
           <Gamepad2 className="h-3 w-3 text-accent/55" />
-          Pss, prueba una secuencia clasica con flechas y luego B + A.
+          Codigo secreto: 🡱 + 🡱 + 🡳 + 🡳 + 🡰 + 🡲 + 🡰 + 🡲 + B + A.
         </span>
       </motion.div>
 
@@ -290,11 +334,17 @@ export function HeroSection({
               whileHover={prefersReducedMotion ? undefined : { scale: 1.01, y: -2 }}
               whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
               className="group relative inline-flex cursor-pointer items-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors hover:bg-secondary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              aria-label="Haz tres clicks para abrir el easter egg secreto"
+              aria-label={nameAriaLabel}
             >
-              <span className="text-primary transition-transform duration-200 group-hover:-translate-x-0.5">&lt;</span>
-              <span>{name}</span>
-              <span className="text-primary transition-transform duration-200 group-hover:translate-x-0.5">/&gt;</span>
+              <motion.span
+                animate={prefersReducedMotion ? undefined : NAME_HINT_ANIMATION}
+                transition={prefersReducedMotion ? undefined : NAME_HINT_TRANSITION}
+                className="relative inline-flex items-center gap-0.5"
+              >
+                <span className="text-primary transition-transform duration-200 group-hover:-translate-x-0.5">&lt;</span>
+                <span>{name}</span>
+                <span className="text-primary transition-transform duration-200 group-hover:translate-x-0.5">/&gt;</span>
+              </motion.span>
               <AnimatePresence>
                 {namePulseToken ? (
                   <motion.span
@@ -304,8 +354,41 @@ export function HeroSection({
                     animate={{ opacity: 0, scale: 1.16 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.45, ease: "easeOut" }}
-                    onAnimationComplete={() => setNamePulseToken(null)}
+                    onAnimationComplete={() => {
+                      setNamePulseToken((currentToken) => (currentToken === namePulseToken ? null : currentToken));
+                    }}
                   />
+                ) : null}
+              </AnimatePresence>
+              <AnimatePresence>
+                {nameClickFeedback ? (
+                  <motion.span
+                    key={nameClickFeedback.token}
+                    className="pointer-events-none absolute -right-2 -top-4 inline-flex min-w-[3rem] justify-center rounded-full border border-[#22C55E]/45 bg-background/95 px-2 py-1 font-mono text-xs font-semibold tracking-[0.16em] text-[#22C55E] shadow-[0_14px_32px_rgba(34,197,94,0.18)]"
+                    initial={{ opacity: 0, y: 10, scale: 0.82 }}
+                    animate={
+                      prefersReducedMotion
+                        ? { opacity: [0, 1, 0] }
+                        : {
+                            opacity: [0, 1, 1, 0],
+                            y: [10, -4, -16, -28],
+                            scale: [0.82, 1, 1.03, 0.94],
+                          }
+                    }
+                    exit={{ opacity: 0 }}
+                    transition={
+                      prefersReducedMotion
+                        ? { duration: 0.45, times: [0, 0.3, 1], ease: "easeOut" }
+                        : { duration: 0.72, ease: "easeOut" }
+                    }
+                    onAnimationComplete={() => {
+                      setNameClickFeedback((currentFeedback) =>
+                        currentFeedback?.token === nameClickFeedback.token ? null : currentFeedback
+                      );
+                    }}
+                  >
+                    +{nameClickFeedback.count}
+                  </motion.span>
                 ) : null}
               </AnimatePresence>
             </motion.button>
@@ -351,7 +434,7 @@ export function HeroSection({
               type="button"
               aria-label="Cerrar modal easter egg"
               className="absolute inset-0 cursor-pointer bg-background/80 backdrop-blur-sm"
-              onClick={closeAndEnterWorkspace}
+              onClick={closeEasterEgg}
             />
             <motion.div
               role="dialog"
@@ -366,7 +449,7 @@ export function HeroSection({
               <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rotate-12 rounded-2xl bg-primary/18" />
               <button
                 type="button"
-                onClick={closeAndEnterWorkspace}
+                onClick={closeEasterEgg}
                 className="absolute right-3 top-3 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-border bg-background/55 text-foreground transition-colors hover:border-primary hover:text-primary"
                 aria-label="Cerrar"
               >
@@ -385,14 +468,14 @@ export function HeroSection({
                 El portfolio va a cambiar al workspace oculto con layout tipo IDE.
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Cerrar este modal con overlay, tecla Escape, icono o CTA te lleva directo a esa vista.
+                Usa el CTA para entrar al workspace. Overlay, tecla Escape o icono solo cierran este modal.
               </p>
 
               <div className="mt-6 flex justify-end">
                 <button
                   type="button"
-                  onClick={closeAndEnterWorkspace}
-                  className="inline-flex cursor-pointer items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                  onClick={enterWorkspaceFromModal}
+/*  */                  className="inline-flex cursor-pointer items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                 >
                   Entrar al workspace
                 </button>
