@@ -152,16 +152,25 @@ jobs:
           IMAGE_NAME: ${{ steps.image.outputs.name }}
         run: |
           manifest="$(mktemp)"
+          inspect_stderr="$(mktemp)"
 
           if docker buildx imagetools inspect \
             --format '{{json .Manifest}}' \
-            "${IMAGE_NAME}:latest" > "$manifest"; then
+            "${IMAGE_NAME}:latest" > "$manifest" 2> "$inspect_stderr"; then
             previous_digest="$(jq --exit-status --raw-output '.digest' "$manifest")"
             echo "available=true" >> "$GITHUB_OUTPUT"
             echo "reference=${IMAGE_NAME}@${previous_digest}" >> "$GITHUB_OUTPUT"
           else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No previous latest manifest is available for restoration."
+            inspect_status=$?
+            if grep --extended-regexp --ignore-case --quiet \
+              'manifest.*(unknown|not found)|tag.*not found' \
+              "$inspect_stderr"; then
+              echo "available=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::The registry reported no previous latest manifest for restoration."
+            else
+              echo "::error::Unable to inspect the existing latest manifest (exit ${inspect_status}); refusing promotion."
+              exit "$inspect_status"
+            fi
           fi
 
       - name: Read main head before promotion
@@ -191,7 +200,9 @@ jobs:
           echo "matches_run_sha=true" >> "$GITHUB_OUTPUT"
 
       - name: Promote immutable run image to latest
-        if: steps.main-before-promotion.outputs.matches_run_sha == 'true'
+        if: >-
+          steps.latest-before.outputs.available == 'true' &&
+          steps.main-before-promotion.outputs.matches_run_sha == 'true'
         shell: bash
         env:
           IMAGE_NAME: ${{ steps.image.outputs.name }}
@@ -200,9 +211,44 @@ jobs:
             --tag "${IMAGE_NAME}:latest" \
             "${IMAGE_NAME}:sha-${GITHUB_SHA}"
 
+      - name: Promote bootstrap run image to latest
+        id: bootstrap-promotion
+        if: steps.latest-before.outputs.available == 'false'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+        run: |
+          # Bootstrap has no manifest to restore, so this is the last read
+          # before creating latest rather than a reused earlier snapshot.
+          main_sha="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" |
+            jq --exit-status --raw-output '.object.sha'
+          )"
+
+          if [ "$main_sha" != "$GITHUB_SHA" ]; then
+            echo "promoted=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping bootstrap latest promotion: main is ${main_sha}, not ${GITHUB_SHA}."
+            exit 0
+          fi
+
+          docker buildx imagetools create \
+            --tag "${IMAGE_NAME}:latest" \
+            "${IMAGE_NAME}:sha-${GITHUB_SHA}"
+          echo "promoted=true" >> "$GITHUB_OUTPUT"
+
       - name: Read main head after promotion
         id: main-after-promotion
-        if: steps.main-before-promotion.outputs.matches_run_sha == 'true'
+        if: >-
+          (steps.latest-before.outputs.available == 'true' &&
+          steps.main-before-promotion.outputs.matches_run_sha == 'true') ||
+          steps.bootstrap-promotion.outputs.promoted == 'true'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -240,10 +286,21 @@ jobs:
             --tag "${IMAGE_NAME}:latest" \
             "${PREVIOUS_REFERENCE}"
 
+      - name: Fail observed bootstrap promotion race
+        if: >-
+          steps.bootstrap-promotion.outputs.promoted == 'true' &&
+          steps.main-after-promotion.outputs.matches_run_sha != 'true'
+        shell: bash
+        run: |
+          echo "::error::Bootstrap latest promotion became stale; no previous latest manifest exists to restore."
+          exit 1
+
       - name: Trigger Dokploy deployment
         if: >-
-          steps.main-before-promotion.outputs.matches_run_sha == 'true' &&
           steps.main-after-promotion.outputs.matches_run_sha == 'true' &&
+          (steps.latest-before.outputs.available == 'true' &&
+          steps.main-before-promotion.outputs.matches_run_sha == 'true') ||
+          steps.bootstrap-promotion.outputs.promoted == 'true') &&
           vars.DOKPLOY_AUTO_DEPLOY_ENABLED != 'false'
         shell: bash
         env:
@@ -277,6 +334,9 @@ jobs:
               docker buildx imagetools create \
                 --tag "${IMAGE_NAME}:latest" \
                 "${PREVIOUS_LATEST_REFERENCE}"
+            else
+              echo "::error::Bootstrap latest promotion became stale; no previous latest manifest exists to restore."
+              exit 1
             fi
             echo "Skipping Dokploy: main changed to ${main_sha}."
             exit 0
