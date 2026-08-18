@@ -130,7 +130,34 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
+      - name: Capture immutable run manifest
+        id: run-image
+        shell: bash
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+        run: |
+          inspect_stderr="$(mktemp)"
+          run_reference="${IMAGE_NAME}:sha-${GITHUB_SHA}"
+
+          if docker buildx imagetools inspect \
+            --format '{{json .Manifest}}' \
+            "$run_reference" > /dev/null 2> "$inspect_stderr"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Reusing existing immutable run image ${run_reference}."
+          else
+            inspect_status=$?
+            if grep --fixed-strings --quiet "${run_reference}: not found" "$inspect_stderr" || \
+              grep --extended-regexp --ignore-case --quiet 'manifest unknown' "$inspect_stderr"; then
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::The registry reported no immutable run image for this commit."
+            else
+              echo "::error::Unable to inspect the immutable run image (exit ${inspect_status}); refusing to build or promote."
+              exit "$inspect_status"
+            fi
+          fi
+
       - name: Build and push ARM64 image
+        if: steps.run-image.outputs.exists != 'true'
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
@@ -162,9 +189,8 @@ jobs:
             echo "reference=${IMAGE_NAME}@${previous_digest}" >> "$GITHUB_OUTPUT"
           else
             inspect_status=$?
-            if grep --extended-regexp --ignore-case --quiet \
-              'manifest.*(unknown|not found)|tag.*not found' \
-              "$inspect_stderr"; then
+            if grep --fixed-strings --quiet "${IMAGE_NAME}:latest: not found" "$inspect_stderr" || \
+              grep --extended-regexp --ignore-case --quiet 'manifest unknown' "$inspect_stderr"; then
               echo "available=false" >> "$GITHUB_OUTPUT"
               echo "::notice::The registry reported no previous latest manifest for restoration."
             else

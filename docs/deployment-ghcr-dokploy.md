@@ -20,7 +20,7 @@ No hay comando ni suite de pruebas automatizadas configurados en este repositori
 
 ## Imagen, plataforma y etiquetas
 
-El registry es `ghcr.io`; la imagen que consume producción es `ghcr.io/kevelmun/web-portfolio:latest`. Cada release publica primero la forma inmutable `ghcr.io/kevelmun/web-portfolio:sha-FULL_COMMIT_SHA`, donde `FULL_COMMIT_SHA` es el SHA completo del commit validado. La plataforma publicada es exclusivamente `linux/arm64`.
+El registry es `ghcr.io`; la imagen que consume producción es `ghcr.io/kevelmun/web-portfolio:latest`. Cada release usa la forma inmutable `ghcr.io/kevelmun/web-portfolio:sha-FULL_COMMIT_SHA`, donde `FULL_COMMIT_SHA` es el SHA completo del commit validado. Antes de construir, el workflow comprueba esa etiqueta: si ya existe, la reutiliza y no la reconstruye ni la sobrescribe; si no existe inequívocamente, la publica para `linux/arm64`. Esta garantía es del workflow: administradores con permisos directos sobre el registry aún podrían mutar una etiqueta externamente.
 
 El workflow añade metadatos OCI: origen (`org.opencontainers.image.source`), revisión (`org.opencontainers.image.revision`) y la fecha estándar generada por `docker/metadata-action`. La caché de BuildKit usa GitHub Actions con el scope `portfolio-arm64`, tanto al leer como al escribir (`mode=max`).
 
