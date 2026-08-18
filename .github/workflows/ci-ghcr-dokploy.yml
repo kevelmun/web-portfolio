@@ -142,8 +142,30 @@ jobs:
           cache-from: type=gha,scope=portfolio-arm64
           cache-to: type=gha,mode=max,scope=portfolio-arm64
 
-      - name: Check main is current
-        id: main-head
+      # Git refs, OCI tags, and Dokploy webhooks have no shared atomic transaction.
+      # The pre/post reads below reject observed races; a final read happens in
+      # the webhook step immediately before its request.
+      - name: Capture latest manifest before promotion
+        id: latest-before
+        shell: bash
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+        run: |
+          manifest="$(mktemp)"
+
+          if docker buildx imagetools inspect \
+            --format '{{json .Manifest}}' \
+            "${IMAGE_NAME}:latest" > "$manifest"; then
+            previous_digest="$(jq --exit-status --raw-output '.digest' "$manifest")"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "reference=${IMAGE_NAME}@${previous_digest}" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No previous latest manifest is available for restoration."
+          fi
+
+      - name: Read main head before promotion
+        id: main-before-promotion
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -159,16 +181,17 @@ jobs:
             jq --exit-status --raw-output '.object.sha'
           )"
 
+          echo "sha=${main_sha}" >> "$GITHUB_OUTPUT"
           if [ "$main_sha" != "$GITHUB_SHA" ]; then
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping latest promotion: ${GITHUB_SHA} is not the current main head (${main_sha})."
+            echo "matches_run_sha=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping latest promotion: main is ${main_sha}, not ${GITHUB_SHA}."
             exit 0
           fi
 
-          echo "current=true" >> "$GITHUB_OUTPUT"
+          echo "matches_run_sha=true" >> "$GITHUB_OUTPUT"
 
-      - name: Promote immutable image to latest
-        if: steps.main-head.outputs.current == 'true'
+      - name: Promote immutable run image to latest
+        if: steps.main-before-promotion.outputs.matches_run_sha == 'true'
         shell: bash
         env:
           IMAGE_NAME: ${{ steps.image.outputs.name }}
@@ -177,17 +200,86 @@ jobs:
             --tag "${IMAGE_NAME}:latest" \
             "${IMAGE_NAME}:sha-${GITHUB_SHA}"
 
+      - name: Read main head after promotion
+        id: main-after-promotion
+        if: steps.main-before-promotion.outputs.matches_run_sha == 'true'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          main_sha="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" |
+            jq --exit-status --raw-output '.object.sha'
+          )"
+
+          echo "sha=${main_sha}" >> "$GITHUB_OUTPUT"
+          if [ "$main_sha" != "$GITHUB_SHA" ]; then
+            echo "matches_run_sha=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "matches_run_sha=true" >> "$GITHUB_OUTPUT"
+
+      - name: Restore previous latest after stale promotion
+        if: >-
+          steps.main-before-promotion.outputs.matches_run_sha == 'true' &&
+          steps.main-after-promotion.outputs.matches_run_sha != 'true' &&
+          steps.latest-before.outputs.available == 'true'
+        shell: bash
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          PREVIOUS_REFERENCE: ${{ steps.latest-before.outputs.reference }}
+        run: |
+          docker buildx imagetools create \
+            --tag "${IMAGE_NAME}:latest" \
+            "${PREVIOUS_REFERENCE}"
+
       - name: Trigger Dokploy deployment
         if: >-
-          steps.main-head.outputs.current == 'true' &&
+          steps.main-before-promotion.outputs.matches_run_sha == 'true' &&
+          steps.main-after-promotion.outputs.matches_run_sha == 'true' &&
           vars.DOKPLOY_AUTO_DEPLOY_ENABLED != 'false'
         shell: bash
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOKPLOY_DEPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK_URL }}
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          PREVIOUS_LATEST_AVAILABLE: ${{ steps.latest-before.outputs.available }}
+          PREVIOUS_LATEST_REFERENCE: ${{ steps.latest-before.outputs.reference }}
         run: |
           if [ -z "$DOKPLOY_DEPLOY_WEBHOOK_URL" ]; then
             echo "::error::DOKPLOY_DEPLOY_WEBHOOK_URL is not configured."
             exit 1
+          fi
+
+          # This is the last possible read before the irreversible webhook.
+          # A ref update after this read but before Dokploy receives the request
+          # cannot be atomically prevented by GitHub Actions, GHCR, or Dokploy.
+          main_sha="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" |
+            jq --exit-status --raw-output '.object.sha'
+          )"
+
+          if [ "$main_sha" != "$GITHUB_SHA" ]; then
+            if [ "$PREVIOUS_LATEST_AVAILABLE" = 'true' ]; then
+              docker buildx imagetools create \
+                --tag "${IMAGE_NAME}:latest" \
+                "${PREVIOUS_LATEST_REFERENCE}"
+            fi
+            echo "Skipping Dokploy: main changed to ${main_sha}."
+            exit 0
           fi
 
           curl \
