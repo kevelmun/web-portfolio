@@ -24,7 +24,7 @@ Estructura clave:
 
 - Desarrollo local corre dentro de un contenedor Docker definido en [docker-compose.yml](docker-compose.yml) (servicio `portfolio`, Node 20, pnpm via Corepack, Vite dev server en `5173`).
 - Asegúrate de que comandos, puertos y rutas reflejen el entorno containerizado.
-- Para producción se usa [Dockerfile.dokploy](Dockerfile.dokploy) (multi-stage: build con Node 20, sirve con `nginx:alpine` en puerto 80).
+- Para producción se usa [Dockerfile.dokploy](Dockerfile.dokploy) (multi-stage: build con Node.js 22 LTS, sirve con el runtime Nginx Alpine fijado en puerto 80).
 
 ## Command Execution
 
