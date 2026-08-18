@@ -238,6 +238,10 @@ docker tag web-portfolio-web:latest your-registry/web-portfolio:latest
 docker push your-registry/web-portfolio:latest
 ```
 
+### GitHub Actions + GHCR + Dokploy (production)
+
+La ruta de producción basada en imágenes traslada los builds fuera de la VM: GitHub Actions publica en GHCR y Dokploy hace pull de la imagen validada. Consulte la [guía de activación, comprobación y rollback](docs/deployment-ghcr-dokploy.md).
+
 ## Troubleshooting
 
 - Port already in use (5173): stop other dev servers or set a different port `pnpm dev -- --port 5174`.
