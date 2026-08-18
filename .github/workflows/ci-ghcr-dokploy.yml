@@ -298,7 +298,7 @@ jobs:
       - name: Trigger Dokploy deployment
         if: >-
           steps.main-after-promotion.outputs.matches_run_sha == 'true' &&
-          (steps.latest-before.outputs.available == 'true' &&
+          ((steps.latest-before.outputs.available == 'true' &&
           steps.main-before-promotion.outputs.matches_run_sha == 'true') ||
           steps.bootstrap-promotion.outputs.promoted == 'true') &&
           vars.DOKPLOY_AUTO_DEPLOY_ENABLED != 'false'
