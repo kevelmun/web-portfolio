@@ -1,0 +1,19 @@
+---
+// Sigilo: una E dentro de un arco ojival equilátero, con una chispa vino arriba.
+// Por debajo de 40 px se dibuja sin líneas de construcción.
+interface Props { size?: number; construction?: boolean }
+const { size = 32, construction = false } = Astro.props;
+const showLines = construction && size >= 40;
+---
+<svg width={size * 0.8} height={size} viewBox="0 -12 64 92" fill="none" aria-hidden="true">
+  {showLines && (
+    <g stroke="var(--sigil-frame)" stroke-width="0.6" stroke-dasharray="2 3" opacity="var(--construction)">
+      <circle cx="8" cy="44" r="48" />
+      <circle cx="56" cy="44" r="48" />
+      <line x1="-8" y1="44" x2="72" y2="44" />
+    </g>
+  )}
+  <path d="M8 78 V44 A48 48 0 0 1 32 2.43 A48 48 0 0 1 56 44 V78 Z" stroke="var(--sigil-frame)" stroke-width="1.5" stroke-linejoin="round" />
+  <text x="32" y="64" text-anchor="middle" font-family="var(--font-display)" font-weight="500" font-size="40" fill="var(--sigil-letter)">E</text>
+  <path d="M32 -10 L35 -5 L32 0 L29 -5 Z" fill="var(--sigil-spark)" />
+</svg>

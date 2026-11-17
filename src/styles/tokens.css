@@ -1,0 +1,66 @@
+/* Elihan Design System — copia de tokens.css (generado desde tokens.json).
+   Las fuentes se sirven con @fontsource-variable (ver Base.astro). */
+:root, [data-theme="night"] {
+  --obsidian: #0C0B0E; --crypt: #08070A; --carbon: #15131A; --char: #1E1B23; --slate: #2A2630; --ash: #3A3540;
+  --ivory: #F3ECDD; --parchment: #EAE0CC; --white-vellum: #FFFDF7;
+  --stone-50: #F3ECDD; --stone-100: #EEE9DF; --stone-200: #D9D3CA; --stone-300: #BFBAB2; --stone-400: #A29E97; --stone-500: #878186;
+  --stone-600: #6C676C; --stone-700: #565155; --stone-800: #403B3F; --stone-900: #2B272B; --stone-950: #181518;
+  --wine-50: #FFF1F2; --wine-100: #FFE1E3; --wine-200: #FCC3C8; --wine-300: #F49FA8; --wine-400: #E37A88; --wine-500: #CA596B;
+  --wine-600: #AB3D51; --wine-700: #8E273D; --wine-800: #6F152A; --wine-900: #4F081A; --wine-950: #31000B;
+  --gold-50: #FAF4EA; --gold-100: #F2E8D8; --gold-200: #E3D2B4; --gold-300: #D0B788; --gold-400: #B99A5C; --gold-500: #A07D37;
+  --gold-600: #846317; --gold-700: #6B4D00; --gold-800: #503900; --gold-900: #372600; --gold-950: #1F1400;
+  --blush-50: #FCF2F3; --blush-100: #F5E5E6; --blush-200: #E8CDCE; --blush-300: #D8AFB1; --blush-400: #C28F92; --blush-500: #A87276;
+  --blush-600: #8C585C; --blush-700: #724347; --blush-800: #583033; --blush-900: #3D1E21; --blush-950: #250E10;
+  --patina-300: #8DB5A0; --patina-700: #3B6A55; --patina-tint-night: #1C1C22; --patina-tint-day: #F3F4EC;
+  --cobre-300: #D99A66; --cobre-700: #8A4A1C; --cobre-tint-night: #201B20; --cobre-tint-day: #F8F2E9;
+  --cinabrio-300: #E8836B; --cinabrio-700: #A0301D; --cinabrio-tint-night: #211A20; --cinabrio-tint-day: #FBF1E9;
+  --peltre-300: #AEB6BE; --peltre-700: #4D5864; --peltre-tint-night: #1E1C24; --peltre-tint-day: #F3F2EE;
+
+  --bg-canvas: var(--obsidian); --bg-surface: var(--carbon); --bg-raised: var(--char); --bg-sunken: var(--crypt); --bg-inverse: var(--ivory);
+  --text-primary: var(--ivory); --text-secondary: var(--stone-300); --text-muted: var(--stone-400); --text-inverse: var(--obsidian);
+  --border-subtle: var(--slate); --border-default: var(--ash); --border-strong: var(--stone-500);
+  --brand: var(--wine-400); --brand-fill: var(--wine-600); --brand-fill-hover: var(--wine-700); --brand-border: var(--wine-400);
+  --on-brand: var(--ivory); --brand-subtle: var(--wine-950);
+  --gold: var(--gold-300); --gold-line: var(--gold-500); --link: var(--gold-300); --focus-ring: var(--gold-300);
+  --tender: var(--blush-300); --tender-subtle: var(--blush-950);
+  --success-fg: var(--patina-300); --success-bg: var(--patina-tint-night); --success-border: var(--patina-300);
+  --warning-fg: var(--cobre-300); --warning-bg: var(--cobre-tint-night); --warning-border: var(--cobre-300);
+  --error-fg: var(--cinabrio-300); --error-bg: var(--cinabrio-tint-night); --error-border: var(--cinabrio-300);
+  --info-fg: var(--peltre-300); --info-bg: var(--peltre-tint-night); --info-border: var(--peltre-300);
+  --grain: var(--grain-night);
+  color-scheme: dark;
+}
+[data-theme="parchment"] {
+  --bg-canvas: var(--ivory); --bg-surface: var(--white-vellum); --bg-raised: var(--white-vellum); --bg-sunken: var(--parchment); --bg-inverse: var(--obsidian);
+  --text-primary: var(--obsidian); --text-secondary: var(--stone-700); --text-muted: var(--stone-700); --text-inverse: var(--ivory);
+  --border-subtle: var(--stone-200); --border-default: var(--stone-300); --border-strong: var(--stone-600);
+  --brand: var(--wine-700); --brand-fill: var(--wine-700); --brand-fill-hover: var(--wine-800); --brand-border: var(--wine-700);
+  --on-brand: var(--ivory); --brand-subtle: var(--wine-100);
+  --gold: var(--gold-700); --gold-line: var(--gold-500); --link: var(--wine-700); --focus-ring: var(--wine-600);
+  --tender: var(--blush-700); --tender-subtle: var(--blush-100);
+  --success-fg: var(--patina-700); --success-bg: var(--patina-tint-day); --success-border: var(--patina-700);
+  --warning-fg: var(--cobre-700); --warning-bg: var(--cobre-tint-day); --warning-border: var(--cobre-700);
+  --error-fg: var(--cinabrio-700); --error-bg: var(--cinabrio-tint-day); --error-border: var(--cinabrio-700);
+  --info-fg: var(--peltre-700); --info-bg: var(--peltre-tint-day); --info-border: var(--peltre-700);
+  --grain: var(--grain-parchment);
+  color-scheme: light;
+}
+:root {
+  --button-primary-bg: var(--brand-fill); --button-primary-fg: var(--on-brand); --button-primary-border: var(--brand-border);
+  --button-secondary-border: var(--border-strong); --button-secondary-hover-border: var(--gold);
+  --tag-border: var(--border-strong); --nav-current: var(--gold); --ornament-line: var(--gold-line);
+  --sigil-frame: var(--gold); --sigil-letter: var(--text-primary); --sigil-spark: var(--brand); --arch-frame: var(--gold);
+  --dropcap: var(--brand); --numeral: var(--gold); --note-bg: var(--bg-surface); --tender-note-bg: var(--tender-subtle);
+  --achievement-border: var(--gold-line);
+
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  --space-10: 40px; --space-14: 56px; --space-20: 80px; --space-32: 128px;
+  --radius-none: 0px; --radius-sm: 2px; --radius-md: 4px;
+  --target-min: 44px; --control-height: 44px; --content-max: 1160px; --measure: 64ch;
+  --border-width: 1px; --focus-width: 2px; --focus-offset: 2px;
+  --grain-night: 0.10; --grain-parchment: 0.22; --construction: 0.55; --glow: 0.16;
+  --duration-fast: 160ms; --duration-base: 240ms; --duration-slow: 400ms; --ease-candle: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --font-display: "Cormorant Garamond Variable", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-body: "Geist Variable", Geist, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, Menlo, monospace;
+}

@@ -1,0 +1,12 @@
+---
+interface Props { numeral: string; title: string; intro?: string }
+const { numeral, title, intro } = Astro.props;
+---
+<header class="section-head reveal">
+  <span class="numeral" aria-hidden="true">{numeral}</span>
+  <h2 class="h2">{title}</h2>
+  {intro && <p class="intro">{intro}</p>}
+  <div class="ornament" aria-hidden="true">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1 L10 7 L7 13 L4 7 Z" stroke="currentColor" stroke-width="1" /><circle cx="7" cy="7" r="1.2" fill="currentColor" /></svg>
+  </div>
+</header>

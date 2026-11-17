@@ -1,32 +1,14 @@
-# Design System Master File
+# Sistema visual Elihan
 
-> **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
-> If that file exists, its rules **override** this Master file.
-> If not, strictly follow the rules below.
+La versión activa usa Astro. Las fuentes de verdad son `src/styles/tokens.css` y `src/styles/global.css`, importadas por `src/layouts/Base.astro`.
 
----
+- Temas: `night` y `parchment` en `html[data-theme]`.
+- Tipografía: Cormorant Garamond para títulos, Geist para cuerpo y Geist Mono para metadatos. Se sirve desde paquetes locales.
+- Superficies: `--bg-canvas`, `--bg-surface`, `--bg-raised`, `--bg-sunken`.
+- Texto: `--text-primary`, `--text-secondary`, `--text-muted`.
+- Color y foco: `--brand`, `--gold`, `--link`, `--focus-ring`.
+- Usar la escala `--space-*`, `--radius-*` y los tokens de duración.
+- Conservar navegación por teclado, foco visible, lectura sin JavaScript y movimiento reducido.
+- Reutilizar componentes Astro; no reintroducir las dependencias React/Tailwind de la versión anterior.
 
-**Project:** portfolio-design
-**Generated:** 2026-03-04 21:51:29
-**Category:** Developer Tool / IDE
-
----
-
-## Global Rules
-
-### Color Palette
-
-| Role | Dark Theme | Light Theme | CSS Variable |
-|------|------------|-------------|--------------|
-| Primary | `#cba6f7` | `#8839ef` | `--color-primary` |
-| Secondary | `#585b70` | `#ccd0da` | `--color-secondary` |
-| Accent | `#89dceb` | `#04a5e5` | `--color-accent` |
-| Background | `#181825` | `#eff1f5` | `--color-background` |
-| Card | `#1e1e2e` | `#ffffff` | `--color-card` |
-| Border | `#313244` | `#bcc0cc` | `--color-border` |
-| Muted | `#292c3c` | `#dce0e8` | `--color-muted` |
-| Foreground | `#cdd6f4` | `#4c4f69` | `--color-foreground` |
-| Ring | `#cba6f7` | `#8839ef` | `--color-ring` |
-| Destructive | `#f38ba8` | `#d20f39` | `--color-destructive` |
-
-**Color Notes:** Theme tokens are now dual-mode by default (`:root` light, `.dark` dark). Prefer semantic tokens (`background`, `card`, `foreground`, `muted`, `border`, `primary`, `accent`) over hardcoded hex in components.
+La documentación `design-system/ide-workspace/MASTER.md` describe una vista histórica retirada; no gobierna el sitio actual.

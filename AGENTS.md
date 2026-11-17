@@ -1,115 +1,47 @@
-# Agent Context and Rules
+# Contexto del proyecto
 
-## Project Overview
+Portafolio de Kevin Elihan Muñoz Calva. Desde noviembre de 2026 usa **Astro estático**, TypeScript y pnpm.
 
-Portafolio personal de Kevin Elihan Muñoz Calva. SPA construida con:
+## Entorno y comandos
 
-- **Vite 6** + **React 18** + **TypeScript** (strict)
-- **Tailwind CSS** con tokens semánticos via CSS variables
-- **React Router 6** — solo dos rutas reales: `/` y `/workspace`
-- **Framer Motion**, **lucide-react**, **dnd-kit**, **recharts**
-- Despliegue: Docker + Nginx en una instancia Oracle gestionada con **Dokploy**, DNS en Cloudflare. La imagen de producción se construye desde [Dockerfile.dokploy](Dockerfile.dokploy).
+- Node **22.23.4** o superior compatible con Astro; Docker usa `node:22.23.4-alpine3.24`.
+- pnpm **10.23.0**, fijado en `package.json`. Mantener únicamente `pnpm-lock.yaml`.
+- Entorno de desarrollo: `docker compose up --build`, puerto 5173.
+- Ejecutar comandos del proyecto dentro del contenedor: `docker compose exec portfolio pnpm lint`, `pnpm build`, `pnpm test`.
+- `pnpm lint` ejecuta `astro check`; `pnpm test` necesita un build previo y comprueba HTML/SEO. `pnpm test:http http://HOST:PORT` verifica un servidor Nginx de producción accesible.
 
-Estructura clave:
+## Estructura
 
-- [src/App.tsx](src/App.tsx) — router raíz (`/`, `/workspace`, `*` → `NotFound`)
-- [src/components/Portfolio.tsx](src/components/Portfolio.tsx) — vista principal
-- [src/components/ide/IdeWorkspace.tsx](src/components/ide/IdeWorkspace.tsx) — vista IDE
-- [src/components/portfolio/](src/components/portfolio/) — secciones, hooks y data del portfolio
-- [src/components/ui/](src/components/ui/) — primitivos (Button, Card, Input…)
-- [src/index.css](src/index.css) — variables CSS de tema, fuentes globales, estilos base
-- [ops/nginx/default.conf](ops/nginx/default.conf) — config Nginx con 404 HTTP real
+- `src/data/site.ts`: contenido, identidad y perfiles.
+- `src/data/seo.ts`: canonical, imagen social y grafo Person/WebSite/ProfilePage/ScholarlyArticle.
+- `src/layouts/Base.astro`: metadatos, fuentes locales, navegación y tema.
+- `src/pages/index.astro`: página principal; `llms.txt.ts`: resumen opcional generado.
+- `src/styles/tokens.css` y `global.css`: sistema visual Elihan, temas `night` y `parchment`.
+- `src/assets/sotita.png`: original optimizado a WebP por Astro durante el build.
+- `public/`: recursos con URL estable, robots, sitemap, imagen social y páginas 404/410.
 
-## Environment
+## Diseño y contenido
 
-- Desarrollo local corre dentro de un contenedor Docker definido en [docker-compose.yml](docker-compose.yml) (servicio `portfolio`, Node 20, pnpm via Corepack, Vite dev server en `5173`).
-- Asegúrate de que comandos, puertos y rutas reflejen el entorno containerizado.
-- Para producción se usa [Dockerfile.dokploy](Dockerfile.dokploy) (multi-stage: build con Node 20, sirve con `nginx:alpine` en puerto 80).
+Usar tokens CSS semánticos y componentes Astro existentes; no añadir React/Tailwind para componentes estáticos. Fuentes: Cormorant Garamond, Geist y Geist Mono, servidas localmente. Preferencia de tema en `localStorage['eh-theme']`.
 
-## Command Execution
+No inventar empleos, métricas, titulaciones, perfiles ni testimonios. Los datos estructurados deben coincidir con el texto visible. No publicar el teléfono personal heredado.
 
-Para cualquier comando dentro del entorno de desarrollo, ejecutarlo dentro del contenedor:
+Las referencias se renderizan una vez; el cliente clona las tarjetas solo para la animación. Mantener lectura sin JavaScript y con movimiento reducido.
 
-```bash
-docker exec -it <container-name> <command>
-```
+Las funciones que no sean Baseline ampliamente disponible llevan detección de soporte y respaldo, como el scrollspy de `Base.astro`. El tema Noche por defecto es decisión de marca; el sitio no sigue `prefers-color-scheme`.
 
-Reemplaza `<container-name>` por el nombre real (por convención de Docker Compose suele ser `web-portfolio-portfolio-1`). Ejemplos:
+## URLs y despliegue
 
-```bash
-docker exec -it web-portfolio-portfolio-1 pnpm lint
-docker exec -it web-portfolio-portfolio-1 pnpm build
-```
+- Canonical: `https://kevelmun.dev/`. Conservar dominio y rutas de los recursos públicos heredados.
+- `/workspace` y `/workspace/`: HTTP 410, sin sustitución equivalente.
+- Rutas desconocidas: HTTP 404 real; nunca fallback SPA con 200.
+- `www`: redirección 301 al dominio raíz, con la misma ruta y consulta.
+- Producción Dokploy: `Dockerfile.dokploy`, Nginx en puerto interno **80**. HTTPS termina en el proxy.
 
-## Routing & 404
+- No cambiar políticas de Cloudflare, publicar, hacer commit o push sin que el usuario lo solicite.
 
-- Solo `/` y `/workspace` son rutas válidas.
-- Cualquier otra ruta debe devolver **HTTP 404 real** desde Nginx, no 200 con fallback a `index.html`. La lógica vive en [ops/nginx/default.conf](ops/nginx/default.conf).
-- La página estática [public/404.html](public/404.html) se sirve con status 404 en hard loads.
-- El componente [src/components/NotFound.tsx](src/components/NotFound.tsx) cubre el caso de navegación cliente (ruta wildcard `*` en [src/App.tsx](src/App.tsx)).
-- Si agregas rutas nuevas, **actualiza también** los `location =` explícitos en `ops/nginx/default.conf`.
+## Verificación
 
-## Design System
+Comprobar tipos, build, pruebas de HTML/SEO y respuestas HTTP de la imagen. Revisar móvil/escritorio, navegación, tema, retrato, carrusel y ausencia de JavaScript cuando se modifique la presentación.
 
-**Fuente de verdad:** [design-system/portfolio-design/MASTER.md](design-system/portfolio-design/MASTER.md) y las variables CSS reales en [src/index.css](src/index.css:7-92).
-Para la vista IDE existe un override propio: [design-system/ide-workspace/MASTER.md](design-system/ide-workspace/MASTER.md).
-Si llega a existir un override por página en `design-system/pages/[page-name].md`, ese archivo **gana** sobre el MASTER.
-
-### Regla #1: usar tokens semánticos, no hex
-
-Prefiere siempre las utilidades de Tailwind que apuntan a las variables CSS:
-
-| Token | Tailwind | Dark (Catppuccin Mocha) | Light (Catppuccin Latte) |
-| --- | --- | --- | --- |
-| Fondo página | `bg-background` / `text-foreground` | `#181825` / `#cdd6f4` | `#eff1f5` / `#4c4f69` |
-| Superficie / cards | `bg-card` / `text-card-foreground` | `#1e1e2e` / `#cdd6f4` | `#ffffff` / `#4c4f69` |
-| Primario (Mauve) | `bg-primary` / `text-primary` | `#cba6f7` | `#8839ef` |
-| Acento (Sky) | `bg-accent` / `text-accent` | `#89dceb` | `#04a5e5` |
-| Secundario | `bg-secondary` | `#585b70` | `#ccd0da` |
-| Destructive | `bg-destructive` / `text-destructive` | `#f38ba8` | `#d20f39` |
-| Muted | `bg-muted` / `text-muted-foreground` | `#292c3c` / `#a6adc8` | `#dce0e8` / `#6c6f85` |
-| Border | `border-border` | `#45475a` | `#bcc0cc` |
-| Sidebar / IDE rail | `bg-sidebar` | `#11111b` | `#e6e9ef` |
-
-Solo recurre a hex literales para gradientes muy específicos o cuando estés escribiendo HTML estático (como [public/404.html](public/404.html)), y en esos casos espeja los mismos valores Catppuccin.
-
-### Tipografía
-
-Cargadas en [src/index.css:1](src/index.css#L1) desde Google Fonts:
-
-- **`Montserrat`** → sans default (`body`, `var(--font-sans)`)
-- **`Space Grotesk`** → títulos y display. Aplica automáticamente a `h1`–`h6` o usa la clase `font-display`
-- **`Fira Code`** → mono (`var(--font-mono)`). Para forzarlo en un bloque, usa `style={{ fontFamily: 'var(--font-mono)' }}` (Tailwind no tiene `font-mono` mapeado a esta variable)
-- `Archivo` queda como fallback histórico, no es la fuente principal
-
-### Modo oscuro
-
-- Se controla con la clase `dark` en `<html>` (Tailwind `darkMode: ["class"]`)
-- El hook [usePortfolioPreferences](src/components/portfolio/hooks/usePortfolioPreferences.ts) persiste la preferencia en `localStorage` con la key `portfolio:dark-mode`
-- Para HTML estático servido fuera de React (ej. `public/404.html`), aplica `.dark` al `<html>` leyendo la misma key antes del primer paint
-
-### Estilo visual
-
-- IDE-inspired, vibrante, alto contraste de color, geometría limpia
-- Evitar diseño plano sin profundidad: usar shadows suaves, `backdrop-filter: blur(...)` en superficies translúcidas, gradientes radiales sutiles
-- Hover states siempre presentes; transiciones 150–300 ms
-- `cursor-pointer` en cualquier elemento interactivo (link, botón, card clickable)
-- **Iconos: Lucide (`lucide-react`)**, nunca emojis
-- Evitar emojis en código y commits salvo que el usuario los pida explícitamente
-
-### Componentes
-
-- Reutilizar primitivos de [src/components/ui/](src/components/ui/) (`Button`, `Card`, `Input`, `Textarea`, `Badge`, `Tabs`)
-- `Button` acepta `variant` (`default`, `outline`, `ghost`, `secondary`, `destructive`, `link`) y `size` (`default`, `sm`, `lg`, `icon`)
-- Si necesitas un `<Link>` de React Router con apariencia de botón, usa `cn(buttonVariants({ ... }), "extra-classes")` directamente sobre `<Link>` en lugar de `<Button asChild>` (el `asChild` actual envuelve en `<span>`)
-
-## Build & Lint
-
-```bash
-pnpm dev       # Vite dev server (5173)
-pnpm build     # tsc + vite build → dist/
-pnpm lint      # eslint con --max-warnings 0
-pnpm preview   # servir dist/ localmente
-```
-
-`tsconfig.json` tiene `strict`, `noUnusedLocals` y `noUnusedParameters` activos. Cualquier import o variable sin uso rompe el build.
+Actualizar `lastmod` del sitemap solo cuando cambie de forma significativa el contenido publicado, no en cada build. Conservar archivos o metas de verificación de buscadores si se incorporan en el futuro.

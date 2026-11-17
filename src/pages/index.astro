@@ -1,0 +1,276 @@
+---
+import Base from '../layouts/Base.astro';
+import ArchPortrait from '../components/ArchPortrait.astro';
+import SectionHead from '../components/SectionHead.astro';
+import Pending from '../components/Pending.astro';
+import { Image } from 'astro:assets';
+import sotitaShot from '../assets/sotita.png';
+import { SHOW_PENDING, identity, about, experience, projects, publications, skills, education, certifications, award, recommendations, recommendationsPending, recommendationsUrl } from '../data/site';
+
+const roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+const arrow = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>`;
+const external = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3H3v10h10v-3M9 3h4v4M13 3 7 9"/></svg>`;
+const isExternal = (href: string) => href.startsWith('http');
+---
+<Base
+  title={`${identity.name} · Co-Tech Lead y Full Stack`}
+  description={`${identity.headline} ${identity.location}.`}
+>
+  <section class="hero" id="inicio" tabindex="-1">
+    <span id="hero" aria-hidden="true"></span>
+    <div class="wrap">
+      <div class="hero-copy">
+        <p class="caps">Co-Tech Lead · Full Stack · {identity.location}</p>
+        <h1 class="display">{identity.name}</h1>
+        <p class="lead">{identity.headline} <strong>{identity.now}</strong></p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#contacto">Escríbeme <Fragment set:html={arrow} /></a>
+          <a class="btn btn-secondary" href="#proyectos">Ver proyectos</a>
+        </div>
+        <dl class="hero-facts">
+          <div><dt class="caps">Disponibilidad</dt><dd>{identity.availability}</dd></div>
+          <div><dt class="caps">Base</dt><dd>{identity.location}</dd></div>
+        </dl>
+      </div>
+      <div class="hero-art">
+        <div class="eh-glow"></div>
+        <ArchPortrait src="/images/retrato.webp" alt={`Retrato de ${identity.name} dibujado en mosaico dentro de un marco redondo`} />
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="sobre-mi" tabindex="-1">
+    <div class="wrap">
+      <SectionHead numeral={roman[0]} title="Sobre mí" />
+      <div class="about">
+        <div class="reveal">
+          <p class="about-text">{about.text}</p>
+          <ol class="path" aria-label="De programar a coordinar">
+            {about.path.map((p) => <li>{p}</li>)}
+          </ol>
+        </div>
+        <aside class="sheet reveal" aria-label="Ficha de personaje">
+          <div class="sheet-head">
+            <h3 class="h4">Ficha de personaje</h3>
+            <span class="meta">@{identity.handle}</span>
+          </div>
+          <dl>
+            {about.sheet.map((r) => (
+              <div><dt class="caps">{r.k}</dt><dd>{r.v}</dd></div>
+            ))}
+          </dl>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="section sunken" id="experiencia" tabindex="-1">
+    <div class="wrap">
+      <SectionHead numeral={roman[1]} title="Experiencia" intro="Qué hice, cómo lo hice y qué valor dejó. Las herramientas van en las etiquetas." />
+      <ol class="timeline">
+        {experience.map((job) => (
+          <li class="reveal">
+            <div class="org">
+              <h3 class="h3">{job.org}</h3>
+              {job.orgNote && <span class="meta">{job.orgNote}</span>}
+              {job.place && <span class="meta">{job.place}</span>}
+            </div>
+            <div class:list={['roles', { progression: job.roles.length > 1 && job.org === 'FUNIBER' }]}>
+              {job.roles.length > 1 && job.org === 'FUNIBER' && (
+                <p class="caps progress-note">Progresión: Full Stack → Co-Tech Lead</p>
+              )}
+              {job.roles.map((role) => (
+                <article class="role">
+                  <div class="role-head">
+                    <h4 class="h4">{role.title}</h4>
+                    <span class="meta">{role.dates}</span>
+                  </div>
+                  <ul class="bullets">
+                    {role.bullets.map((b) => <li>{b}</li>)}
+                  </ul>
+                  {role.stack && (
+                    <ul class="tags" aria-label="Stack">
+                      {role.stack.map((s) => <li class="tag">{s}</li>)}
+                    </ul>
+                  )}
+                  <Pending items={role.pending} />
+                </article>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" id="proyectos" tabindex="-1">
+    <div class="wrap">
+      <SectionHead numeral={roman[2]} title="Proyectos" intro="Cuatro cosas que construí y por qué me importan." />
+      <div class="projects">
+        {projects.map((p) => (
+          <article class:list={['project', 'reveal', { featured: p.featured }]}>
+            <div style="display:flex;flex-direction:column;">
+              <div class="project-top">
+                <span class="caps">{p.kind}</span>
+                <span class="meta">{p.when}</span>
+              </div>
+              <h3 class="h3">{p.name}</h3>
+              <p>{p.text}</p>
+              {p.tags && <ul class="tags" aria-label="Stack">{p.tags.map((t) => <li class="tag">{t}</li>)}</ul>}
+              <Pending items={p.pending?.filter((x) => !x.startsWith('Captura'))} />
+              {p.link && (
+                <div class="more">
+                  <a href={p.link.href} {...(isExternal(p.link.href) ? { target: '_blank', rel: 'noopener' } : {})}>
+                    {p.link.label} <Fragment set:html={isExternal(p.link.href) ? external : arrow} />
+                  </a>
+                </div>
+              )}
+            </div>
+            {p.featured && sotitaShot && (
+              <figure class="browser">
+                <div class="browser-bar"><span></span><span></span><span></span><em class="meta">sotita.com</em></div>
+                <Image src={sotitaShot} alt={`Captura de la web de ${p.name}`} format="webp" quality={80} width={1000} loading="lazy" />
+              </figure>
+            )}
+            {p.featured && !sotitaShot && SHOW_PENDING && (
+              <div class="shot"><span class="meta" style="color:inherit">[guarda una captura en public/images/sotita.png]</span></div>
+            )}
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section sunken" id="investigacion" tabindex="-1">
+    <div class="wrap">
+      <SectionHead numeral={roman[3]} title="Investigación" intro="Tres publicaciones de mi etapa en visión por computador, con su DOI." />
+      <ol class="pubs">
+        {publications.map((pub, i) => (
+          <li class="reveal">
+            <span class="numeral" aria-hidden="true">{roman[i]}</span>
+            <div>
+              <h3 class="quote">{pub.title}</h3>
+              <p class="meta pub-meta">{pub.venue} · <a href={`https://doi.org/${pub.doi}`} target="_blank" rel="noopener">doi:{pub.doi}</a></p>
+              <Pending items={pub.pending} />
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" id="skills" tabindex="-1">
+    <span id="habilidades" aria-hidden="true"></span>
+    <div class="wrap">
+      <SectionHead numeral={roman[4]} title="Skills" intro="Agrupadas por lo que hago con ellas, no por orden alfabético." />
+      <div class="skills">
+        {skills.map((g) => (
+          <div class="reveal">
+            <h3 class="caps">{g.group}</h3>
+            <ul class="tags">{g.items.map((s) => <li class="tag">{s}</li>)}</ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section sunken" id="formacion" tabindex="-1">
+    <span id="cv" aria-hidden="true"></span>
+    <div class="wrap">
+      <SectionHead numeral={roman[5]} title="Formación y certificaciones" />
+      <div class="edu">
+        <div class="reveal">
+          <h3 class="caps">Formación</h3>
+          <ul class="rows">
+            {education.map((e) => (
+              <li>
+                <div class="row-top"><h4 class="h4">{e.title}</h4><span class="meta">{e.when}</span></div>
+                <p>{e.org}</p>
+              </li>
+            ))}
+          </ul>
+          <div class="achievement">
+            <span class="seal" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.5 3 3 6-7" /></svg>
+            </span>
+            <div>
+              <span class="caps" style="color:var(--gold)">Logro desbloqueado</span>
+              <p>{award.title} · {award.org}</p>
+            </div>
+          </div>
+        </div>
+        <div class="reveal">
+          <h3 class="caps">Certificaciones</h3>
+          <ul class="rows">
+            {certifications.map((c) => (
+              <li>
+                <div class="row-top">
+                  <h4 class="h4">{c.href ? <a href={c.href} target="_blank" rel="noopener">{c.title}</a> : c.title}</h4>
+                  {c.when && <span class="meta">{c.when}</span>}
+                </div>
+                <p>{c.org}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="recomendaciones" tabindex="-1">
+    <div class="wrap">
+      <SectionHead numeral={roman[6]} title="Referencias que llevo en el corazón" intro="Fragmentos que llevo en el corazón, escritos por personas que han tenido la oportunidad de conocer mi trabajo y mi persona." />
+    </div>
+    <div class="marquee reveal" tabindex="0" role="region" aria-label="Referencias de LinkedIn">
+      <ul class="marquee-track" style={`animation-duration:${recommendations.length * 11}s`}>
+        {recommendations.map((r) => (
+          <li class="rec">
+            <blockquote class="quote">«{r.text}»</blockquote>
+            <div class="rec-who">
+              <span class="body-strong">{r.name}</span>
+              <span class="meta">{r.role}</span>
+              <span class="meta">{r.relation} · {r.when}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <div class="wrap">
+      <Pending items={recommendationsPending} />
+      <p class="rec-more"><a href={recommendationsUrl} target="_blank" rel="noopener">Ver todas en LinkedIn <Fragment set:html={external} /></a></p>
+    </div>
+  </section>
+
+  <section class="section" id="contacto" tabindex="-1">
+    <span id="servicios" aria-hidden="true"></span>
+    <div class="wrap">
+      <SectionHead numeral={roman[7]} title="Contacto" intro="Si tienes un proyecto, un equipo que acompañar o solo una pregunta, escríbeme. Respondo yo." />
+      <div class="contact">
+        <div class="reveal">
+          <a class="mail" href={`mailto:${identity.email}`}>{identity.email}</a>
+          <ul class="links">
+            <li><a href={identity.github} target="_blank" rel="noopener me"><span>GitHub</span><span class="meta">@{identity.handle}</span></a></li>
+            <li><a href={identity.linkedin} target="_blank" rel="noopener me"><span>LinkedIn</span><span class="meta">in/{identity.handle}</span></a></li>
+          </ul>
+        </div>
+        <aside class="tender-note reveal">
+          <p class="quote">Si llegaste hasta aquí, gracias. De verdad.</p>
+          <span class="meta">— Elihan</span>
+        </aside>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const track = document.querySelector<HTMLElement>('.marquee-track');
+  if (track && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    for (const card of Array.from(track.children)) {
+      const clone = card.cloneNode(true) as HTMLElement;
+      clone.setAttribute('aria-hidden', 'true');
+      clone.inert = true;
+      track.append(clone);
+    }
+    track.classList.add('is-looping');
+  }
+</script>

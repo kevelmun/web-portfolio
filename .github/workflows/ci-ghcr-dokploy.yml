@@ -1,0 +1,419 @@
+name: CI, GHCR and Dokploy
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22.23.4"
+  REGISTRY: ghcr.io
+
+jobs:
+  validate:
+    name: Validate application
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Enable pinned pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build static Astro site
+        run: pnpm build
+
+      - name: Check generated HTML and SEO
+        run: pnpm test
+
+      - name: Upload production build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 7
+
+  image-check:
+    name: Build ARM64 image without publishing
+    needs: validate
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js for HTTP checks
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Build ARM64 image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: Dockerfile.dokploy
+          platforms: linux/arm64
+          push: false
+          load: true
+          tags: portfolio:check
+          cache-from: type=gha,scope=portfolio-arm64
+
+      - name: Verify production HTTP responses
+        run: |
+          docker run --detach --name portfolio-check --publish 8080:80 portfolio:check
+          trap 'docker rm --force portfolio-check' EXIT
+          for _attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8080/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          node scripts/verify-http.mjs http://127.0.0.1:8080
+          www_status=$(curl --silent --output /dev/null --write-out '%{http_code}' --header 'Host: www.kevelmun.dev' http://127.0.0.1:8080/)
+          test "$www_status" = 301
+
+  release:
+    name: Publish image and deploy
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      github.ref == 'refs/heads/main'
+    needs: [validate, image-check]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    concurrency:
+      group: portfolio-production-release
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Normalize image name
+        id: image
+        shell: bash
+        run: |
+          repository="${GITHUB_REPOSITORY,,}"
+          echo "name=${REGISTRY}/${repository}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate image metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=raw,value=sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Capture immutable run manifest
+        id: run-image
+        shell: bash
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+        run: |
+          inspect_stderr="$(mktemp)"
+          run_reference="${IMAGE_NAME}:sha-${GITHUB_SHA}"
+
+          if docker buildx imagetools inspect \
+            --format '{{json .Manifest}}' \
+            "$run_reference" > /dev/null 2> "$inspect_stderr"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Reusing existing immutable run image ${run_reference}."
+          else
+            inspect_status=$?
+            if grep --fixed-strings --quiet "${run_reference}: not found" "$inspect_stderr" || \
+              grep --extended-regexp --ignore-case --quiet 'manifest unknown' "$inspect_stderr"; then
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::The registry reported no immutable run image for this commit."
+            else
+              echo "::error::Unable to inspect the immutable run image (exit ${inspect_status}); refusing to build or promote."
+              exit "$inspect_status"
+            fi
+          fi
+
+      - name: Build and push ARM64 image
+        if: steps.run-image.outputs.exists != 'true'
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: Dockerfile.dokploy
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=portfolio-arm64
+          cache-to: type=gha,mode=max,scope=portfolio-arm64
+
+      # Git refs, OCI tags, and Dokploy webhooks have no shared atomic transaction.
+      # The pre/post reads below reject observed races; a final read happens in
+      # the webhook step immediately before its request.
+      - name: Capture latest manifest before promotion
+        id: latest-before
+        shell: bash
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+        run: |
+          manifest="$(mktemp)"
+          inspect_stderr="$(mktemp)"
+
+          if docker buildx imagetools inspect \
+            --format '{{json .Manifest}}' \
+            "${IMAGE_NAME}:latest" > "$manifest" 2> "$inspect_stderr"; then
+            previous_digest="$(jq --exit-status --raw-output '.digest' "$manifest")"
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "reference=${IMAGE_NAME}@${previous_digest}" >> "$GITHUB_OUTPUT"
+          else
+            inspect_status=$?
+            if grep --fixed-strings --quiet "${IMAGE_NAME}:latest: not found" "$inspect_stderr" || \
+              grep --extended-regexp --ignore-case --quiet 'manifest unknown' "$inspect_stderr"; then
+              echo "available=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::The registry reported no previous latest manifest for restoration."
+            else
+              echo "::error::Unable to inspect the existing latest manifest (exit ${inspect_status}); refusing promotion."
+              exit "$inspect_status"
+            fi
+          fi
+
+      - name: Read main head before promotion
+        id: main-before-promotion
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          main_sha="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" |
+            jq --exit-status --raw-output '.object.sha'
+          )"
+
+          echo "sha=${main_sha}" >> "$GITHUB_OUTPUT"
+          if [ "$main_sha" != "$GITHUB_SHA" ]; then
+            echo "matches_run_sha=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping latest promotion: main is ${main_sha}, not ${GITHUB_SHA}."
+            exit 0
+          fi
+
+          echo "matches_run_sha=true" >> "$GITHUB_OUTPUT"
+
+      - name: Promote immutable run image to latest
+        if: >-
+          steps.latest-before.outputs.available == 'true' &&
+          steps.main-before-promotion.outputs.matches_run_sha == 'true'
+        shell: bash
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+        run: |
+          docker buildx imagetools create \
+            --tag "${IMAGE_NAME}:latest" \
+            "${IMAGE_NAME}:sha-${GITHUB_SHA}"
+
+      - name: Promote bootstrap run image to latest
+        id: bootstrap-promotion
+        if: steps.latest-before.outputs.available == 'false'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+        run: |
+          # Bootstrap has no manifest to restore, so this is the last read
+          # before creating latest rather than a reused earlier snapshot.
+          main_sha="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" |
+            jq --exit-status --raw-output '.object.sha'
+          )"
+
+          if [ "$main_sha" != "$GITHUB_SHA" ]; then
+            echo "promoted=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping bootstrap latest promotion: main is ${main_sha}, not ${GITHUB_SHA}."
+            exit 0
+          fi
+
+          docker buildx imagetools create \
+            --tag "${IMAGE_NAME}:latest" \
+            "${IMAGE_NAME}:sha-${GITHUB_SHA}"
+          echo "promoted=true" >> "$GITHUB_OUTPUT"
+
+      - name: Read main head after promotion
+        id: main-after-promotion
+        if: >-
+          (steps.latest-before.outputs.available == 'true' &&
+          steps.main-before-promotion.outputs.matches_run_sha == 'true') ||
+          steps.bootstrap-promotion.outputs.promoted == 'true'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          main_sha="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" |
+            jq --exit-status --raw-output '.object.sha'
+          )"
+
+          echo "sha=${main_sha}" >> "$GITHUB_OUTPUT"
+          if [ "$main_sha" != "$GITHUB_SHA" ]; then
+            echo "matches_run_sha=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "matches_run_sha=true" >> "$GITHUB_OUTPUT"
+
+      - name: Restore previous latest after stale promotion
+        if: >-
+          steps.main-before-promotion.outputs.matches_run_sha == 'true' &&
+          steps.main-after-promotion.outputs.matches_run_sha != 'true' &&
+          steps.latest-before.outputs.available == 'true'
+        shell: bash
+        env:
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          PREVIOUS_REFERENCE: ${{ steps.latest-before.outputs.reference }}
+        run: |
+          docker buildx imagetools create \
+            --tag "${IMAGE_NAME}:latest" \
+            "${PREVIOUS_REFERENCE}"
+
+      - name: Fail observed bootstrap promotion race
+        if: >-
+          steps.bootstrap-promotion.outputs.promoted == 'true' &&
+          steps.main-after-promotion.outputs.matches_run_sha != 'true'
+        shell: bash
+        run: |
+          echo "::error::Bootstrap latest promotion became stale; no previous latest manifest exists to restore."
+          exit 1
+
+      - name: Trigger Dokploy deployment
+        if: >-
+          steps.main-after-promotion.outputs.matches_run_sha == 'true' &&
+          ((steps.latest-before.outputs.available == 'true' &&
+          steps.main-before-promotion.outputs.matches_run_sha == 'true') ||
+          steps.bootstrap-promotion.outputs.promoted == 'true') &&
+          vars.DOKPLOY_AUTO_DEPLOY_ENABLED != 'false'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOKPLOY_DEPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK_URL }}
+          IMAGE_NAME: ${{ steps.image.outputs.name }}
+          PREVIOUS_LATEST_AVAILABLE: ${{ steps.latest-before.outputs.available }}
+          PREVIOUS_LATEST_REFERENCE: ${{ steps.latest-before.outputs.reference }}
+        run: |
+          if [ -z "$DOKPLOY_DEPLOY_WEBHOOK_URL" ]; then
+            echo "::error::DOKPLOY_DEPLOY_WEBHOOK_URL is not configured."
+            exit 1
+          fi
+
+          # This is the last possible read before the irreversible webhook.
+          # A ref update after this read but before Dokploy receives the request
+          # cannot be atomically prevented by GitHub Actions, GHCR, or Dokploy.
+          main_sha="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --header "Authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/git/ref/heads/main" |
+            jq --exit-status --raw-output '.object.sha'
+          )"
+
+          if [ "$main_sha" != "$GITHUB_SHA" ]; then
+            if [ "$PREVIOUS_LATEST_AVAILABLE" = 'true' ]; then
+              docker buildx imagetools create \
+                --tag "${IMAGE_NAME}:latest" \
+                "${PREVIOUS_LATEST_REFERENCE}"
+            else
+              echo "::error::Bootstrap latest promotion became stale; no previous latest manifest exists to restore."
+              exit 1
+            fi
+            echo "Skipping Dokploy: main changed to ${main_sha}."
+            exit 0
+          fi
+
+          dokploy_status="$(
+            curl \
+              --request POST \
+              --proto '=https' \
+              --fail-with-body \
+              --silent \
+              --show-error \
+              --output /dev/null \
+              --write-out '%{http_code}' \
+              --connect-timeout 10 \
+              --max-time 30 \
+              --retry 3 \
+              --retry-connrefused \
+              --retry-delay 5 \
+              --retry-max-time 90 \
+              "$DOKPLOY_DEPLOY_WEBHOOK_URL"
+          )"
+
+          case "$dokploy_status" in
+            2??) ;;
+            *)
+              echo "::error::Dokploy webhook returned HTTP status ${dokploy_status}."
+              exit 1
+              ;;
+          esac
