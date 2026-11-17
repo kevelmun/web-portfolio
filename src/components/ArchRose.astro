@@ -1,0 +1,37 @@
+---
+// Tracería: arco ojival equilátero con un rosetón de 12 radios y las líneas
+// de construcción a la vista. Un solo arco por vista.
+const spokes = Array.from({ length: 12 }, (_, i) => {
+  const a = (i * Math.PI) / 6;
+  return { x1: 160 + Math.cos(a) * 14, y1: 190 + Math.sin(a) * 14, x2: 160 + Math.cos(a) * 92, y2: 190 + Math.sin(a) * 92 };
+});
+const petals = Array.from({ length: 12 }, (_, i) => {
+  const a = (i * Math.PI) / 6 + Math.PI / 12;
+  return { cx: 160 + Math.cos(a) * 78, cy: 190 + Math.sin(a) * 78 };
+});
+---
+<svg viewBox="0 0 320 470" fill="none" role="img" aria-label="Arco ojival con un rosetón de doce radios">
+  <g stroke="currentColor" stroke-width="0.6" stroke-dasharray="2 4" opacity="var(--construction)">
+    <circle cx="20" cy="250" r="280" />
+    <circle cx="300" cy="250" r="280" />
+    <line x1="0" y1="250" x2="320" y2="250" />
+    <line x1="160" y1="0" x2="160" y2="470" />
+  </g>
+  <g stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+    <path d="M20 462 V250 A280 280 0 0 1 160 7.5 A280 280 0 0 1 300 250 V462 Z" />
+    <path d="M36 462 V250 A264 264 0 0 1 160 33 A264 264 0 0 1 284 250 V462" stroke-width="1" opacity="0.7" />
+  </g>
+  <g stroke="currentColor" stroke-width="1">
+    <circle cx="160" cy="190" r="100" />
+    <circle cx="160" cy="190" r="92" opacity="0.6" />
+    <circle cx="160" cy="190" r="14" />
+    {spokes.map((s) => <line x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} />)}
+    {petals.map((p) => <circle cx={p.cx} cy={p.cy} r="11" opacity="0.7" />)}
+  </g>
+  <path d="M160 181 L165 190 L160 199 L155 190 Z" fill="var(--sigil-spark)" />
+  <g font-family="var(--font-mono)" font-size="10" letter-spacing="1.8" fill="currentColor" text-anchor="middle">
+    <text x="160" y="352">DEPTH · CURIOSITY · SOUL</text>
+    <text x="160" y="436" opacity="0.7">VALENCIA · MMXXVI</text>
+  </g>
+  <text x="160" y="408" text-anchor="middle" font-family="var(--font-display)" font-weight="500" font-size="34" letter-spacing="5" fill="var(--text-primary)">ELIHAN</text>
+</svg>

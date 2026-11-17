@@ -142,3 +142,13 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .codex
 /dist-codex/
+
+# Astro generated types
+.astro/
+
+# Agents
+.claude/
+
+# Local documentation
+docs/
+!docs/deployment-ghcr-dokploy.md

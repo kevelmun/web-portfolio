@@ -3,6 +3,8 @@ dist
 .git
 .codex
 .pnpm-store
+.astro
+.superpowers
 
 *.log
 npm-debug.log*
@@ -26,7 +28,6 @@ coverage
 /CLAUDE.md
 /README.md
 /LICENSE
-/Caddyfile
 /Dockerfile
 /Dockerfile.prod
 /Dockerfile.prod.caddy

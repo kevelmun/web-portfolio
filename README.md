@@ -1,254 +1,50 @@
-# Web Portfolio – React + Vite + Tailwind
+# Portafolio de Elihan
 
-Personal portfolio built with React 18, Vite, TypeScript, Tailwind CSS, and a small local set of shadcn/ui-style components. It includes animations (Framer Motion), charts (Recharts), and a themed UI with light/dark mode.
+Portafolio de **Kevin Elihan Muñoz Calva** en [kevelmun.dev](https://kevelmun.dev/). El HTML contiene el perfil, experiencia, proyectos, publicaciones y referencias sin depender de JavaScript.
 
-This README covers local development, Docker usage, scripts, customization points (photo/CV), and deployment tips.
+## Desarrollo con pnpm y Docker
 
-## Tech stack
+Requisitos: Docker Desktop en ejecución. La imagen fija Node 22.23.4 y el proyecto fija pnpm 10.23.0.
 
-- React 18 + TypeScript 5
-- Vite 6 (dev server and build)
-- Tailwind CSS 3 (+ tailwindcss-animate)
-- Local UI components inspired by shadcn/ui (in `src/components/ui`)
-- Framer Motion (animations)
-- Recharts (radar chart in Skills section)
-- lucide-react (icons)
-
-## Prerequisites
-
-- Node.js 20+ (Dockerfile uses `node:20-alpine`)
-- Corepack enabled, using the pinned `pnpm` version from `package.json`
-
-Optional:
-
-- Docker and Docker Compose (for containerized dev)
-
-## Getting started (local)
-
-1) Install dependencies
-
-```bash
-corepack enable
-pnpm install
-```
-
-2) Start the dev server (Vite on port 5173)
-
-```bash
-pnpm dev
-```
-
-3) Open the app
-
-- http://localhost:5173
-
-Build for production and locally preview the build:
-
-```bash
-pnpm build
-pnpm preview
-```
-
-## Getting started (Docker)
-
-### Development (Vite dev server)
-
-This repository includes a dev-focused Dockerfile and a `docker-compose.yml` that mounts the source for instant reload in the container.
-
-Run with Docker Compose:
-
-```bash
+```sh
 docker compose up --build
 ```
 
-Then open http://localhost:5173
+Abrir [localhost:5173](http://localhost:5173). El código se monta para recarga automática.
 
-Notes:
-
-- Live reload works thanks to the project folder bind mount (`.:/app`).
-- The container runs `pnpm dev -- --host 0.0.0.0` to be reachable from your host.
-
-### Production (Caddy with automatic HTTPS)
-
-For production deployment, use the multi-stage `Dockerfile.prod.caddy` that builds the app and serves it with Caddy:
-
-```bash
-# Build the production image
-docker compose -f docker-compose.prod.yml build
-
-# Start the production container
-docker compose -f docker-compose.prod.yml up -d
-
-# Verify it's running
-docker compose -f docker-compose.prod.yml ps
-curl -I http://localhost
+```sh
+docker compose exec portfolio pnpm lint
+docker compose exec portfolio pnpm build
+docker compose exec portfolio pnpm test
 ```
 
-The production setup:
+Sin Docker, usar Node compatible, `corepack enable`, `pnpm install --frozen-lockfile` y los mismos comandos pnpm. No generar un lockfile de npm.
 
-- Uses Node 20 Alpine to build the app (`pnpm build` → `dist/`)
-- Copies the build output to a Caddy Alpine image
-- Caddy config at `Caddyfile` handles SPA routing (all routes → `index.html`)
-- **Automatic HTTPS**: Caddy obtains and renews Let's Encrypt certificates automatically when you configure your domain
-- Serves on ports 80 (HTTP) and 443 (HTTPS)
-- Persistent volumes (`caddy_data`, `caddy_config`) store certificates between restarts
+## Probar la imagen de producción
 
-**To enable HTTPS with your domain:**
-
-1. Edit `Caddyfile` and replace `:80` with your actual domain:
-   ```
-   your-domain.com, www.your-domain.com {
-       root * /usr/share/caddy
-       try_files {path} /index.html
-       file_server
-   }
-   ```
-
-2. Ensure DNS A/AAAA records point to your server's IP
-
-3. Rebuild and restart:
-   ```bash
-   docker compose -f docker-compose.prod.yml down
-   docker compose -f docker-compose.prod.yml build
-   docker compose -f docker-compose.prod.yml up -d
-   ```
-
-4. Caddy will automatically obtain a valid SSL certificate from Let's Encrypt
-
-**Alternative: Nginx setup (legacy)**
-
-If you prefer Nginx instead of Caddy, use `Dockerfile.prod` (without auto-HTTPS):
-- Config at `ops/nginx/default.conf`
-- Only port 80; for HTTPS you'll need a reverse proxy or manual cert setup
-
-## Available scripts
-
-Defined in `package.json`:
-
-- `pnpm dev` – Start Vite dev server.
-- `pnpm build` – Type-check and build to `dist/`.
-- `pnpm preview` – Preview the production build locally.
-- `pnpm lint` – Lint with ESLint and `--max-warnings 0`.
-
-## Project structure
-
-Key files and folders:
-
-- `src/` – Application source
-	- `App.tsx` and `main.tsx` – App entry
-	- `components/` – UI and feature components
-		- `ui/` – Local shadcn/ui-style primitives (Button, Card, Tabs, etc.)
-		- `InteractiveTerminal.tsx` – Animated “terminal” used in the hero
-		- `Portfolio.tsx` – Main page sections (hero, projects, skills, contact, etc.)
-- `index.html` – Vite HTML entry
-- `src/index.css` – Tailwind tokens, light/dark theme variables, and small animations
-- `public/` – Static assets served at site root
-- `vite.config.ts` – Vite config, including `@` alias to `src`
-- `tailwind.config.js` – Tailwind setup + animate plugin
-- `Dockerfile`, `docker-compose.yml` – Dev container config
-- `Dockerfile.prod.caddy`, `docker-compose.prod.yml` – Production container with Caddy (auto-HTTPS)
-- `Dockerfile.prod` – Alternative production setup with Nginx (manual HTTPS)
-- `Caddyfile` – Caddy config for SPA routing and HTTPS
-- `ops/nginx/default.conf` – Nginx config (if using Dockerfile.prod)
-
-Path alias:
-
-- `@` → `./src` (e.g., `import { Button } from "@/components/ui/button"`)
-
-## Customization
-
-Update the following assets and content to personalize:
-
-- Profile photo: `public/images/Me.PNG` (used in `Portfolio.tsx`). Replace with your image or adjust the path in code.
-- CV download: place your file at `public/cv-kevin-munoz.pdf`, or update the link in `Portfolio.tsx` (section “CV”).
-- Social links, contact info, projects, and experience: edit values in `src/components/Portfolio.tsx`.
-- Colors and theme: tweak CSS variables in `src/index.css` and Tailwind theme tokens in `tailwind.config.js`.
-
-### Theme Tokens (Light + Dark)
-
-The project uses semantic CSS variables in `src/index.css`:
-
-- `:root` → light mode defaults
-- `.dark` → dark mode overrides
-
-Core tokens:
-
-- `--background`, `--foreground`, `--card`, `--border`, `--muted`
-- `--primary`, `--secondary`, `--accent`, `--ring`, `--destructive`
-
-When styling components, prefer semantic classes (`bg-background`, `text-foreground`, `border-border`, `bg-card`, `text-muted-foreground`, `bg-primary`) instead of fixed hex values so both themes stay consistent.
-
-## Environment variables
-
-No environment variables are required for local development by default. If you introduce API keys or endpoints later, create a `.env` file (git-ignored) and reference variables using `import.meta.env` (Vite convention). Example:
-
-```bash
-VITE_API_BASE_URL=https://api.example.com
+```sh
+docker compose -f docker-compose.prod.yml up --build -d
 ```
 
-Use in code: `import.meta.env.VITE_API_BASE_URL`.
+Abrir [localhost:8080](http://localhost:8080). Si está activo el contenedor de desarrollo:
 
-## Deployment
-
-### Static hosting
-
-This is a static site once built (`dist/`). You can deploy to any static host:
-
-- **Vercel / Netlify**: point to `pnpm build` and serve `dist/`.
-- **GitHub Pages**: build locally or in CI and publish `dist/`.
-- **Any static server**: copy `dist/` to your server.
-
-### Docker (production with Caddy)
-
-The default production setup uses Caddy with automatic HTTPS. For containerized deployment:
-
-1. **Configure your domain** in `Caddyfile` (replace `:80` with your domain)
-
-2. **Build and start:**
-
-```bash
-docker compose -f docker-compose.prod.yml build
-docker compose -f docker-compose.prod.yml up -d
+```sh
+docker compose exec portfolio pnpm test:http http://host.docker.internal:8080
 ```
 
-3. **Verify:**
+La construcción de la imagen ejecuta tipos, build y pruebas SEO. Nginx sirve en el puerto interno 80; Dokploy mantiene la terminación HTTPS.
 
-```bash
-docker compose -f docker-compose.prod.yml ps
-curl -I https://your-domain.com  # Should show valid HTTPS
-```
+## Editar el contenido
 
-**Key benefits:**
-- Automatic Let's Encrypt certificates (no manual setup)
-- Auto-renewal (Caddy handles it)
-- HTTP → HTTPS redirect built-in
-- Certificates persist in Docker volumes (`caddy_data`, `caddy_config`)
+- Perfil, trayectoria, proyectos y referencias: `src/data/site.ts`.
+- Datos estructurados y canonical: `src/data/seo.ts`.
+- Layout y metadatos: `src/layouts/Base.astro`.
+- Tokens y estilos: `src/styles/`.
+- Captura de Sotita: `src/assets/sotita.png`, optimizada por Astro.
+- Imagen social de 1200 × 630: `public/og.png`.
+- Sitemap: `public/sitemap.xml`; modificar `lastmod` solo ante cambios significativos.
+- El PDF heredado sigue accesible en `/cv-kevin-munoz.pdf`. Revisar su vigencia antes de promocionarlo de nuevo.
 
-**For deployment to a remote server:**
+## Despliegue e indexación
 
-```bash
-# On your server (after git pull)
-docker compose -f docker-compose.prod.yml up -d
-```
-
-**To push to a registry:**
-
-```bash
-docker tag web-portfolio-web:latest your-registry/web-portfolio:latest
-docker push your-registry/web-portfolio:latest
-```
-
-### GitHub Actions + GHCR + Dokploy (production)
-
-La ruta de producción basada en imágenes traslada los builds fuera de la VM: GitHub Actions publica en GHCR y Dokploy hace pull de la imagen validada. Consulte la [guía de activación, comprobación y rollback](docs/deployment-ghcr-dokploy.md).
-
-## Troubleshooting
-
-- Port already in use (5173): stop other dev servers or set a different port `pnpm dev -- --port 5174`.
-- Node version: use Node 20+ for compatibility with the provided Dockerfile and tooling.
-- Styles not applied: ensure Tailwind content globs include your file paths (already configured for `src/**`).
-- Images or CV not found: verify files under `public/` and referenced paths in components.
-
-## License
-
-MIT. See the `LICENSE` file for details.
+La aplicación existente puede seguir desplegando el repositorio `web-portfolio`, rama `main`, con `Dockerfile.dokploy` y puerto 80. No se requiere cambiar dominio, DNS ni propiedad de Search Console por el cambio de framework.

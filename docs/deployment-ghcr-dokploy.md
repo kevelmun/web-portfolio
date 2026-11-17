@@ -1,5 +1,7 @@
 # Despliegue ARM64 con GitHub Actions, GHCR y Dokploy
 
+> **Estado de la migración Astro (17 nov. 2026):** este flujo ya estaba en la rama de trabajo, pero sus commits no están en `origin/main` en la copia local revisada. Su presencia no demuestra que Dokploy esté configurado para consumir GHCR. Si la aplicación sigue desplegando desde Git, conserve esa fuente y defina `DOKPLOY_AUTO_DEPLOY_ENABLED=false` en las variables de Actions antes del merge para evitar un segundo despliegue por webhook. Véase [migración y SEO](migration-astro-seo.md).
+
 Esta guía describe el corte manual hacia imágenes de contenedor ya construidas. No ejecuta cambios en GitHub, GHCR ni Dokploy por sí misma, y no incluye credenciales ni URL de webhook.
 
 ## Arquitectura final
@@ -16,7 +18,7 @@ El workflow se llama `CI, GHCR and Dokploy` y está en [`.github/workflows/ci-gh
 - Un `push` a `main` valida y puede publicar/desplegar.
 - `workflow_dispatch` permite una ejecución manual, pero el release solo procede cuando la referencia es `refs/heads/main`.
 
-No hay comando ni suite de pruebas automatizadas configurados en este repositorio. La validación existente es lint y build (este último incluye la comprobación estricta de TypeScript).
+La validación usa `pnpm lint` (Astro/TypeScript), `pnpm build` y `pnpm test` sobre el HTML generado. La imagen ejecuta también estas comprobaciones. En todos los eventos, CI arranca Nginx y prueba los contratos HTTP mediante `scripts/verify-http.mjs`, con Node fijado a la misma versión del build. El job de publicación depende tanto de la validación como de esta prueba de la imagen; un push directo a `main` también debe superar ambas.
 
 ## Imagen, plataforma y etiquetas
 
@@ -70,7 +72,7 @@ Después de un release, confirme lo siguiente:
 - El run de GitHub Actions está en verde y su release publicó una etiqueta `sha-...` y `latest` que apuntan a la imagen esperada.
 - GHCR muestra un manifest `linux/arm64` para esas etiquetas.
 - El log de Dokploy muestra pull y reinicio, sin etapa de build.
-- Las cargas HTTP de `/` y `/workspace` devuelven `200`.
+- `/` devuelve `200` con el contenido completo en HTML; `/workspace` y `/workspace/` devuelven `410` porque la vista IDE se ha retirado.
 - Una carga dura de una ruta inexistente devuelve HTTP `404` real (por ejemplo, `/route-that-does-not-exist`), no un fallback `200`.
 
 ## Desactivar temporalmente el despliegue automático
@@ -82,7 +84,7 @@ Defina la variable de Actions `DOKPLOY_AUTO_DEPLOY_ENABLED=false`. Con ese valor
 1. Seleccione el SHA completo de un workflow que se haya desplegado correctamente.
 2. Verifique en GHCR que existe `ghcr.io/kevelmun/web-portfolio:sha-FULL_COMMIT_SHA` para ese SHA.
 3. En Dokploy, cambie la imagen configurada a esa etiqueta inmutable exacta, guarde y despliegue.
-4. Confirme en el log el pull/reinicio sin build y vuelva a verificar `/`, `/workspace` y el HTTP `404` de una ruta inexistente.
+4. Confirme en el log el pull/reinicio sin build. Verifique `/` y una ruta inexistente (`404`). Para una release Astro, `/workspace` devuelve `410`; si vuelve a una release React anterior, la vista IDE puede devolver `200`.
 5. Mantenga la etiqueta inmutable seleccionada hasta decidir explícitamente volver a `latest`.
 
 ## Volver de una etiqueta inmutable a `latest`

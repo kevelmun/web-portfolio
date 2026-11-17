@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: "22.23.2"
+  NODE_VERSION: "22.23.4"
   REGISTRY: ghcr.io
 
 jobs:
@@ -44,8 +44,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Type-check and build
+      - name: Build static Astro site
         run: pnpm build
+
+      - name: Check generated HTML and SEO
+        run: pnpm test
 
       - name: Upload production build
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -57,7 +60,6 @@ jobs:
 
   image-check:
     name: Build ARM64 image without publishing
-    if: github.event_name == 'pull_request'
     needs: validate
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
@@ -69,6 +71,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up Node.js for HTTP checks
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
@@ -79,14 +87,30 @@ jobs:
           file: Dockerfile.dokploy
           platforms: linux/arm64
           push: false
+          load: true
+          tags: portfolio:check
           cache-from: type=gha,scope=portfolio-arm64
+
+      - name: Verify production HTTP responses
+        run: |
+          docker run --detach --name portfolio-check --publish 8080:80 portfolio:check
+          trap 'docker rm --force portfolio-check' EXIT
+          for _attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8080/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          node scripts/verify-http.mjs http://127.0.0.1:8080
+          www_status=$(curl --silent --output /dev/null --write-out '%{http_code}' --header 'Host: www.kevelmun.dev' http://127.0.0.1:8080/)
+          test "$www_status" = 301
 
   release:
     name: Publish image and deploy
     if: >-
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       github.ref == 'refs/heads/main'
-    needs: validate
+    needs: [validate, image-check]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
     concurrency:

@@ -1,0 +1,12 @@
+---
+// Huecos visibles para datos que faltan. Se apagan con SHOW_PENDING en src/data/site.ts.
+import { SHOW_PENDING } from '../data/site';
+interface Props { items?: string[] }
+const { items = [] } = Astro.props;
+---
+{SHOW_PENDING && items.length > 0 && (
+  <p class="pending">
+    <span class="label">Por rellenar</span>
+    {items.map((i) => <span class="gap">{i}</span>)}
+  </p>
+)}
